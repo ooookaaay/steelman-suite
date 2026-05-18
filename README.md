@@ -143,14 +143,6 @@ This suite is **opinionated** about adversarial review. It won't:
 - Find style violations (use `ruff` / `prettier` for that)
 - Replace human review on safety-critical paths (it's a force multiplier, not a substitute)
 
-## Roadmap
-
-- [x] **v0.1.0** — initial release: `attack-fix`, `attack-finding`, `devils-pair`, README
-- [ ] **v0.2.0** — `full-codebase` orchestrator + `pre-mortem` skill
-- [ ] **v0.3.0** — eval harness with [HELM](https://crfm.stanford.edu/helm/)-style benchmark + Brier-score recalibration
-- [ ] **v0.4.0** — `verify-claim` skill + `strip-reasoning` utility
-- [ ] **v1.0.0** — Anthropic Plugin marketplace publication
-
 ## Acknowledgements
 
 Built on the shoulders of:
