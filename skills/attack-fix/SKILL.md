@@ -86,7 +86,6 @@ Each reviewer must return findings in this exact shape:
     {
       "id": "F1",
       "verdict": "REAL|LIKELY-REAL|UNCLEAR|LIKELY-FALSE|FALSE",
-      "confidence": 0.85,
       "file": "src/processing/article_processor.py",
       "lines": "956-961",
       "steelman": "The code attempts to gate 4c on the OR of four signals; this defends against the case where no alias matched but business keywords still indicate a business-criminal cluster.",
@@ -100,7 +99,7 @@ Each reviewer must return findings in this exact shape:
 }
 ```
 
-`confidence` is the reviewer's own probability the finding is REAL. **Calibrated** — see [references/calibration.md](references/calibration.md) for the Brier-score recalibration protocol (recompute monthly against logged outcomes).
+`verdict` is categorical (REAL / LIKELY-REAL / UNCLEAR / LIKELY-FALSE / FALSE). v0.1 does not emit a numeric `confidence` — Brier-weighted aggregation is deferred to v0.3+ once enough run data accumulates. Reviewers pick one verdict; the meta-reviewer aggregates by majority.
 
 **Findings missing `execution_evidence` are tagged `[UNVERIFIED]` in the aggregation step and deprioritized.** Per CodePRM / ThinkPRM 2025 pattern: claims without execution evidence are noise.
 
@@ -139,12 +138,11 @@ Final report to the user with this structure:
 **CONFIRMED issues:** N
 **Needs operator:** N
 **Dismissed (false positives):** N
-**Calibrated confidence:** {aggregate-Brier-weighted score}
 
 ## Confirmed findings
 
 ### F1 — {short title} — {file}:{lines}
-**Confidence:** 0.87 (3/3 reviewers, Brier-weighted)
+**Reviewer agreement:** 3/3 REAL (or 2/3 — note the dissenter)
 
 **Steelman of the code:**
 {quote}
@@ -178,7 +176,7 @@ Final report to the user with this structure:
 - Stripped reasoning trace: yes (per Anthropic Orr 2026)
 - Cross-talk: no (MARS pattern)
 - Tool-interactive verification: yes (claims without execution_evidence dropped)
-- Calibration: yes (Brier-weighted aggregate)
+- Aggregation: simple majority (Brier-weighted aggregate deferred to v0.3+)
 ```
 
 ## Failure modes you MUST handle

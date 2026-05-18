@@ -75,7 +75,28 @@ mkdir -p ~/.codex/plugins
 git clone https://github.com/ooookaaay/steelman-suite ~/.codex/plugins/steelman-suite
 ```
 
-### Cursor / Gemini CLI / Junie / Kiro / Goose / Copilot Workspace
+### Cursor
+
+```bash
+mkdir -p ~/.cursor/skills
+git clone https://github.com/ooookaaay/steelman-suite ~/.cursor/skills/steelman-suite
+```
+
+### Gemini CLI
+
+```bash
+mkdir -p ~/.gemini/plugins
+git clone https://github.com/ooookaaay/steelman-suite ~/.gemini/plugins/steelman-suite
+```
+
+### Aider
+
+```bash
+mkdir -p ~/.aider/skills
+git clone https://github.com/ooookaaay/steelman-suite ~/.aider/skills/steelman-suite
+```
+
+### Junie / Kiro / Goose / Copilot Workspace / other Agent Skills-compatible hosts
 
 All [agentskills.io](https://agentskills.io)-compatible hosts: drop the repo into their skills directory. The SKILL.md format is the cross-vendor standard (Dec 18 2025+).
 
@@ -161,6 +182,17 @@ Built on the shoulders of:
 - Anthropic's [Agent Skills](https://docs.claude.com/en/docs/claude-code/skills) spec (2025-12-18)
 
 Field-tested in production at [ooookaaay/ugolovkin](https://github.com/ooookaaay/ugolovkin) — 2026-05-18 audit cycle caught **two real regressions in shipped fixes** (a non-picklable APScheduler closure and a sycophantic alert-flag flip) before they hit operator-driven traffic.
+
+### Field evidence — 2026-05-18 audit cycle
+
+Commit range: [`429d93a4..04fd7afc`](https://github.com/ooookaaay/ugolovkin/compare/429d93a4..04fd7afc) on `ooookaaay/ugolovkin` (private mirror — public version at [ooookaaay/ugolovkin](https://github.com/ooookaaay/ugolovkin)).
+
+The suite triaged 32 codex HIGH findings → **9 confirmed-real, 13 latent-not-fire, 4 false-positive, 2 by-design (operator binding), 4 operationally-irrelevant.** Of the 9 confirmed-real, 2 were regressions introduced by **other** AI-generated fixes earlier in the same session:
+
+1. **Non-picklable APScheduler closure** — `scheduler_jobs.py` registered a job whose target was a closure capturing a per-request lambda. APScheduler's `SQLAlchemyJobStore` pickles job targets at registration time; restart would have crashed silently. `steelman:attack-fix` reviewer B reproduced via `pickle.dumps(job.func)` in the execution_evidence field.
+2. **Sycophantic alert-flag flip** — a fix flipped a runtime alert threshold from `5%` to `25%` to silence a noisy alert without addressing the underlying fallback rate. Reviewer A flagged this as «the fix doesn't address the bug, it hides the symptom» — the `attack` field cited the original bug report directly contradicting the new threshold.
+
+The other 13 LATENT-NOT-FIRE findings were exactly the dormant code paths that codex over-rated as HIGH — feature flag off, migration not yet applied, no callers — caught by Step 4 (production reachability check) in `attack-finding`.
 
 ## License
 

@@ -3,6 +3,56 @@
 By default the suite is invocation-only. Hooks turn it into a background guard.
 The pair hook is **opt-in but recommended** — it's the workhorse.
 
+## TL;DR — copy-pasteable `~/.claude/settings.json`
+
+Drop this into `~/.claude/settings.json` (merge with existing keys; don't overwrite). Replace `/ABSOLUTE/PATH/TO/steelman-suite` with your clone path.
+
+```json
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/ABSOLUTE/PATH/TO/steelman-suite/hooks/post-edit-devils-pair.sh"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "pattern": "^git push",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/ABSOLUTE/PATH/TO/steelman-suite/hooks/pre-push-attack-on-high-blast.sh"
+          }
+        ]
+      }
+    ]
+  },
+  "env": {
+    "STEELMAN_PAIR_LOC_THRESHOLD": "25",
+    "STEELMAN_PAIR_DEBOUNCE_S": "300",
+    "STEELMAN_HIGH_BLAST_PATHS": "migrations/ src/main.py"
+  }
+}
+```
+
+**Shape gotchas** (Claude Code rejects silently if you get these wrong):
+
+- `hooks` is an OBJECT, keyed by event name (`PostToolUse`, `PreToolUse`, `Stop`, `SubagentStop`, etc.) — NOT an array.
+- Each event maps to an ARRAY of matcher-groups.
+- Each matcher-group has a `matcher` regex (matched against tool name) and a `hooks` ARRAY of `{type, command}` entries.
+- `command` MUST be an absolute path (`~` is NOT expanded; `$HOME` may or may not be — use the literal path).
+- `pattern` (PreToolUse on Bash) is matched against the full command string.
+- After editing, run `/reload-plugins` in every live Claude Code session — settings.json is loaded at session start.
+
+If the hook never fires, check `~/.claude/logs/*.log` for `hook command failed:` lines — most issues are wrong path or non-executable script (`chmod +x hooks/*.sh`).
+
 ## The default-recommended hook: pair-on-edit
 
 Adds `~60 seconds in the background` whenever your cumulative uncommitted

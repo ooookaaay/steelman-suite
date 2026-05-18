@@ -1,6 +1,6 @@
 {
   "name": "steelman-suite",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "SOTA-2026 multi-AI devil's advocate skill suite for Claude Code / Codex / Cursor / any Agent Skills host. Heterogeneous jury + tool-interactive verification + calibrated confidence + steelman schema.",
   "author": "ooookaaay",
   "license": "MIT",

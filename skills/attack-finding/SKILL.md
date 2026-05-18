@@ -75,11 +75,13 @@ The claim may be stale (file refactored since claim was made) or hallucinated. R
 
 ### Step 3 — Check against operator binding contracts
 
-**This is the load-bearing step that closes the 6-of-21-dormant gap.** Per the 2026-05-18 audit cycle: codex meta-review confirmed that several "HIGH bugs" were actually **operator-binding by-design behavior** flagged as bugs.
+**MANDATORY before flagging anything as REAL.** This is the load-bearing step that closes the 6-of-21-dormant gap. Per the 2026-05-18 ugolovkin audit cycle: codex meta-review confirmed that several "HIGH bugs" were actually **operator-binding by-design behavior** flagged as bugs (e.g. `AliasTierResolver` unknown→`track_always` default is by-design fail-open, NOT a vulnerability).
+
+You MUST perform this check BEFORE Step 5 spawns the jury — otherwise the jury wastes wall-clock on a claim that an ADR explicitly invalidates.
 
 Check in order:
-1. `CLAUDE.md` (if present) for explicit binding clauses about this file / pattern
-2. `~/.claude/projects/<project>/memory/` for operator preferences
+1. `CLAUDE.md` (if present) for explicit binding clauses about this file / pattern — grep for the cited symbol name AND for «binding» / «by-design» / «operator binding»
+2. `~/.claude/projects/<project>/memory/` for operator preferences (`feedback_*.md` files)
 3. `.planning/notes/` for ADRs / binding decisions
 4. Git log of the cited file (`git log --follow <file>`) for "by design" / "operator binding" commits
 
@@ -94,6 +96,10 @@ Verdict: this is NOT a bug. The claim should be retired from the backlog with ra
 ```
 
 ### Step 4 — Check production reachability
+
+**MANDATORY before flagging HIGH.** Per the 2026-05-18 audit cycle: **6 of 21 codex HIGH findings were dormant** (flag off / migration applied / unreachable caller / no recent execution signature in logs). Codex systematically over-rates severity when it can't verify production reachability — it sees the bug pattern but can't see whether the path executes. This step is what catches that.
+
+If any of the three reachability tests below fail, the verdict is at most `LATENT-NOT-FIRE`, never `CONFIRMED REAL` — regardless of how convincing the code-level reasoning is.
 
 For each claim, run:
 

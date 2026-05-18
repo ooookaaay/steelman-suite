@@ -25,9 +25,10 @@ Procedure:
    - a reproducible failing test (code block, paste-ready)
    - execution evidence — grep/sed/run output that proves the trigger exists in the actual source
    - blast radius (data loss / silent corruption / outage / cost)
-   - calibrated confidence (your probability this is a real bug, 0.0-1.0)
 
 5. Output as the JSON schema below. ANY finding without execution evidence is tagged [UNVERIFIED] and downgraded by the meta-reviewer.
+
+Verdict is categorical only — pick exactly one of REAL / LIKELY-REAL / UNCLEAR / LIKELY-FALSE / FALSE. Do NOT emit a calibrated probability number; v0.1 does not aggregate them. If you cannot pick a verdict, the finding is UNCLEAR and goes to the operator.
 
 Output schema (strict):
 {
@@ -35,7 +36,6 @@ Output schema (strict):
     {
       "id": "F1",
       "verdict": "REAL|LIKELY-REAL|UNCLEAR|LIKELY-FALSE|FALSE",
-      "confidence": 0.0-1.0,
       "file": "src/...",
       "lines": "N-M",
       "steelman": "...",
@@ -50,24 +50,18 @@ Output schema (strict):
 
 If you genuinely find no real bugs after a thorough adversarial pass, return findings:[] AND fill no_findings_justification with the SPECIFIC ATTACK VECTORS you considered and ruled out (≥3 distinct vectors). "Looks fine" is not a valid justification.
 
-Hunt vectors checklist (cover at minimum these in your reasoning, regardless of final verdict):
-- Null / None / empty input
-- Concurrency: race, reentrancy, async cancellation, lock ordering
-- Error path: does an exception in step N corrupt state for step N+1?
-- Off-by-one in ranges / slices / indexes
-- Time-of-check-to-time-of-use (TOCTOU)
-- Integer overflow / underflow / unsigned wraparound
-- Resource leak: file handles, DB connections, sockets, subprocesses
-- Implicit assumptions about ordering, atomicity, idempotency
-- Failure modes the code claims to handle that it doesn't actually handle
-- Failure modes the code DOESN'T claim to handle but should
-- Cross-file invariants: is the cited code consistent with its callers / callees?
-- Operator-driven misuse: what if the operator passes an unexpected flag?
+Hunt vectors checklist (6 high-yield categories — cover these in your reasoning, regardless of final verdict):
+- Null / None / empty input — what happens when a list is `[]`, a dict is `{}`, a value is `None`?
+- Concurrency / race — two callers, ordering, async cancellation, lock acquisition order
+- Error-path state corruption — exception in step N leaves state inconsistent for step N+1 (partial write, half-committed transaction)
+- Off-by-one in ranges / slices / indexes — `<` vs `<=`, fence-post, zero vs one-based
+- Resource leak — file handles, DB connections, sockets, subprocesses, GPU memory, executor futures
+- Cross-file invariant — the cited code's contract differs from what its caller or callee assumes
 
 Anti-patterns YOU must avoid:
 - Restating what the code does without finding a flaw
 - Recommending stylistic changes (use ruff/prettier for that)
-- "Consider adding more tests" without specifying a concrete test
+- **Recommending tests without writing them.** "Consider adding tests for X" is NOT a finding. If a missing test is the bug, the `reproducible_test` field must contain the actual test code, paste-ready. Otherwise drop the finding.
 - Speculating about "future maintainability" without a concrete current bug
 - Claiming a bug without execution evidence
 
@@ -110,9 +104,8 @@ This isn't paranoid — per Anthropic Orr 2026, reviewers downgrade severity by 
 ## What the meta-reviewer (Claude orchestrator) does with reviewer outputs
 
 1. Deduplicate findings across reviewers by `(file, lines)`.
-2. Aggregate `verdict` by ≥2/3 majority (BLOCK on real / DISMISS on false / ESCALATE on disagreement).
-3. Compute Brier-weighted confidence (better-calibrated reviewers count more).
-4. Drop any finding without `execution_evidence` (tagged `[UNVERIFIED]`).
-5. Check each surviving finding against CLAUDE.md operator bindings — reclassify `BY-DESIGN` if matched.
-6. Check reachability — reclassify `LATENT-NOT-FIRE` if flag-off / migration-pending / no callers.
-7. Emit the final report per Step 7 of the parent SKILL.md.
+2. Aggregate `verdict` by ≥2/3 majority (BLOCK on real / DISMISS on false / ESCALATE on disagreement). Simple majority in v0.1 — Brier-weighted aggregation deferred to v0.3+.
+3. Drop any finding without `execution_evidence` (tagged `[UNVERIFIED]`).
+4. Check each surviving finding against CLAUDE.md operator bindings — reclassify `BY-DESIGN` if matched.
+5. Check reachability — reclassify `LATENT-NOT-FIRE` if flag-off / migration-pending / no callers.
+6. Emit the final report per Step 7 of the parent SKILL.md.
