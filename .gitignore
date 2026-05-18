@@ -1,0 +1,23 @@
+# Run artifacts (per-repo cache)
+.steelman-cache/
+runs/
+
+# Local config overrides
+.env
+*.local
+
+# Editor cruft
+.DS_Store
+.vscode/
+.idea/
+*.swp
+
+# Python (if anyone forks and adds python helpers)
+__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Logs
+*.log

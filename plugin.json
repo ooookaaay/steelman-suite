@@ -1,0 +1,94 @@
+{
+  "name": "steelman-suite",
+  "version": "0.1.0",
+  "description": "SOTA-2026 multi-AI devil's advocate skill suite for Claude Code / Codex / Cursor / any Agent Skills host. Heterogeneous jury + tool-interactive verification + calibrated confidence + steelman schema.",
+  "author": "ooookaaay",
+  "license": "MIT",
+  "homepage": "https://github.com/ooookaaay/steelman-suite",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ooookaaay/steelman-suite.git"
+  },
+  "keywords": [
+    "claude-code",
+    "claude-skills",
+    "adversarial-review",
+    "devils-advocate",
+    "code-review",
+    "agent-skills",
+    "multi-agent",
+    "llm-as-judge",
+    "ai-red-team"
+  ],
+  "agent_skills_version": "1.0.0",
+  "skills": [
+    {
+      "name": "steelman:attack-fix",
+      "path": "skills/attack-fix/SKILL.md",
+      "description": "Multi-AI jury attacks a specific commit / diff. Strips implementer's reasoning trace before review. Outputs steelman + counter + verifiable file:line + calibrated confidence."
+    },
+    {
+      "name": "steelman:attack-finding",
+      "path": "skills/attack-finding/SKILL.md",
+      "description": "Meta-review of a claimed bug or audit finding. Verifies against actual source code. Multi-model vote on REAL / FALSE-POSITIVE / BY-DESIGN / LATENT."
+    },
+    {
+      "name": "steelman:devils-pair",
+      "path": "skills/devils-pair/SKILL.md",
+      "description": "Lightweight 2-agent same-family + cross-family quick check. ~30s-60s wall-clock. Use mid-edit for fast sanity check before saving."
+    },
+    {
+      "name": "steelman:full-codebase",
+      "path": "skills/full-codebase/SKILL.md",
+      "description": "Orchestrator — domain-scoped parallel adversarial pass across the entire repository. Uses ≤5 parallel subagents matched to common src/ layout (processing / publish / storage / orchestration / eval-ingestion)."
+    },
+    {
+      "name": "steelman:pre-mortem",
+      "path": "skills/pre-mortem/SKILL.md",
+      "description": "Klein-style past-tense failure brainstorm. Frames the proposed change as 'two weeks from now, this failed catastrophically — why?' Surfaces 30% more candor than forward-looking risk analysis (HBR 2007)."
+    },
+    {
+      "name": "steelman:verify-claim",
+      "path": "skills/verify-claim/SKILL.md",
+      "description": "Verifies a file:line bug claim against actual source. Runs grep / read / pytest as needed. Returns CONFIRMED / FALSIFIED / UNVERIFIABLE with execution evidence."
+    }
+  ],
+  "hooks_optional": [
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "pattern": "^git push",
+      "script": "hooks/pre-push-attack-on-high-blast.sh",
+      "description": "OPT-IN. Runs attack-fix ONLY when staged diff touches paths in STEELMAN_HIGH_BLAST_PATHS env var. Adds 5-10 min to push for those changes; zero overhead otherwise. Routine commits never trigger this. Copy to ~/.claude/settings.json `hooks` array to enable."
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Edit|Write",
+      "script": "hooks/post-edit-devils-pair.sh",
+      "description": "OPT-IN. Runs devils-pair on cumulative diff after Edit/Write touches >25 LOC. ~60s background. Operator-configurable threshold via STEELMAN_PAIR_LOC_THRESHOLD env var. Default disabled — copy to settings.json to enable."
+    }
+  ],
+  "hooks_intentionally_disabled_by_default": "The suite is opt-in by design. Auto-firing adversarial review on every commit destroys flow without proportional safety benefit (per operator binding feedback_no_overengineering). The operator chooses what to gate.",
+  "compatibility": {
+    "claude-code": ">=1.41.0",
+    "codex-cli": ">=0.130.0",
+    "agent-skills-spec": ">=1.0.0",
+    "cursor": ">=0.50",
+    "gemini-cli": ">=1.0",
+    "junie": "*",
+    "kiro": "*",
+    "goose": "*"
+  },
+  "providers_supported": [
+    "claude-opus-4-7",
+    "claude-sonnet-4-6",
+    "codex-gpt-5-5",
+    "deepseek-r1",
+    "gemini-2-5-pro"
+  ],
+  "providers_required": {
+    "minimum": 1,
+    "recommended": 3,
+    "rationale": "Heterogeneous multi-model jury per PoLL (Verga 2024), Jury-on-Demand (2512.01786), A-HMAD (2025) — ≥3 providers with 2/3 agreement threshold prevents single-family correlated errors. Falls back to dialectical-bootstrap (same model, two independent passes with stripped framing) when only one provider available."
+  }
+}
