@@ -43,7 +43,7 @@ Adversarial review is only valuable when its findings are real AND its latency i
 | `steelman:full-codebase` | Pre-release whole-repo pass, domain-parallel |
 | `steelman:pre-mortem` | Klein past-tense failure brainstorm before architectural commitments |
 
-Each skill follows the **SOTA-2026 design contract** (see [docs/PATTERNS.md](docs/PATTERNS.md)):
+Each skill follows the **SOTA-2026 design contract** (see [docs/HOOKS.md](docs/HOOKS.md)):
 
 1. **Heterogeneous multi-model jury** (≥3 providers, ≥2/3 agreement)
 2. **Strip implementer's reasoning trace** before review (counter-sycophancy)
@@ -51,7 +51,7 @@ Each skill follows the **SOTA-2026 design contract** (see [docs/PATTERNS.md](doc
 4. **Tool-interactive critic** — must actually run code to verify; claim without execution = `[UNVERIFIED]`
 5. **Calibrated confidence** (Brier/ECE) — not raw probabilities; recalibrate monthly against logged outcomes
 
-Plus the [MARS pattern](docs/PATTERNS.md#mars) — independent reviewers + meta-reviewer, **no cross-talk** — to avoid groupthink (per arxiv 2503.12029).
+Plus the **MARS pattern** — independent reviewers + meta-reviewer, **no cross-talk** — to avoid groupthink (per arxiv 2503.12029).
 
 ## How to install
 
@@ -153,7 +153,7 @@ We're the only one that hits all 7 axes simultaneously.
 - **Tool-interactive verification** — every claimed finding is executed against actual source. No `[UNVERIFIED]` allowed in final output
 - **Calibrated confidence** via Brier-score recalibration on a sliding window of logged outcomes
 - **Steelman schema** — every finding ships with: (a) steelman of the original code, (b) attack vector, (c) verifiable `file:line`, (d) reproducible failing test
-- **Independence-gate subagent** for self-critique (the [MARS pattern](docs/PATTERNS.md#mars), not free-for-all debate)
+- **Independence-gate subagent** for self-critique (the **MARS pattern**, not free-for-all debate)
 
 ## Limitations
 
