@@ -1,16 +1,26 @@
 # steelman-suite
 
 > **Adversarial review skills that build the strongest case AGAINST your code.**
-> SOTA-2026 multi-AI devil's advocate for Claude Code / Codex CLI / Cursor / Gemini CLI / any [Agent Skills](https://agentskills.io)-compatible host.
+> Multi-AI devil's advocate for Claude Code / Codex CLI / Cursor / Gemini CLI / any [Agent Skills](https://agentskills.io)-compatible host.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Skill Standard](https://img.shields.io/badge/Agent%20Skills-compliant-blue)](https://agentskills.io)
+
+## Why "steelman"
+
+The opposite of a **straw man**: instead of attacking a weak caricature of a position, you build the **strongest possible version** of it and attack that. The term comes from rationalist / philosophical practice — steelman your opponent's argument before rebutting, otherwise you're just shadowboxing.
+
+This suite flips the framing onto your own code. The reviewer's job is to build the strongest possible case **against** the change or claim. Charity-of-interpretation toward the code is the enemy. If the fix looks correct, the reviewer has not looked hard enough.
+
+The other half of the contract is anti-sycophancy: each reviewer is spawned without the implementer's reasoning trace, so it can't be primed by the framing «here's what I was trying to do». OpenAI's [CriticGPT](https://arxiv.org/abs/2407.00215) (2024) is the closest commercial-grade analog — 85% bug-catch vs 25% unaided. This suite is the productized version of the same idea for any [Agent Skills](https://agentskills.io)-compatible host.
 
 ## Why
 
 LLM coding assistants are **systemically sycophantic**. Three independently-steerable sycophantic behaviors live in latent space (see [_Sycophancy Is Not One Thing_, 2025](https://arxiv.org/abs/2502.13095)) — the model defaults to agreeing with whatever framing you give it. When you ask «is my fix good?», it says yes.
 
-Catholic Church figured this out in 1587 (the original `advocatus diaboli`). Prussian general staff figured it out in 1812 (`Kriegsspiel`). CIA Team B did it in 1976. OpenAI's [CriticGPT](https://arxiv.org/abs/2407.00215) (2024) does it internally — 85% bug-catch vs 25% for unaided humans — but nobody shipped a productized version. Anthropic's own 2026 internal study (Orr) showed reviewers downgrade severity by 30%+ when given implementer framing.
+The institutional fix is well known. The Catholic Church canonization process invented the `advocatus diaboli` in 1587. The Prussian general staff codified it as `Kriegsspiel` in 1812. The CIA used the same pattern in their Team B exercise in 1976. The discipline is older than computing: assign one team to attack what the other team built — and reward them for it.
+
+CriticGPT (2024) showed the same effect works on LLM-written code. Internal Anthropic work in 2026 showed that reviewers downgrade severity by 30%+ when they see the implementer's reasoning trace — exactly the framing every IDE auto-feeds to its review pass.
 
 **This suite ships the productized version.**
 
@@ -43,15 +53,15 @@ Adversarial review is only valuable when its findings are real AND its latency i
 | `steelman:full-codebase` | Pre-release whole-repo pass, domain-parallel |
 | `steelman:pre-mortem` | Klein past-tense failure brainstorm before architectural commitments |
 
-Each skill follows the **SOTA-2026 design contract** (see [docs/HOOKS.md](docs/HOOKS.md)):
+Each skill follows the same design contract (see [docs/HOOKS.md](docs/HOOKS.md)):
 
-1. **Heterogeneous multi-model jury** (≥3 providers, ≥2/3 agreement)
-2. **Strip implementer's reasoning trace** before review (counter-sycophancy)
-3. **Extended thinking ≥2k tokens + minimax-ToT** (two-player zero-sum framing)
-4. **Tool-interactive critic** — must actually run code to verify; claim without execution = `[UNVERIFIED]`
-5. **Calibrated confidence** (Brier/ECE) — not raw probabilities; recalibrate monthly against logged outcomes
+1. **Heterogeneous multi-model jury** — reviewers come from different model families (Claude / Codex / DeepSeek / Gemini), with ≥2-of-3 agreement required. Same-family LLMs share blind spots; cross-family forces disagreement that's actually informative.
+2. **Strip the implementer's reasoning trace** before review. The reviewer sees the code, not the framing — kills the «I'm sure this is right because the implementer was sure» failure mode.
+3. **Extended thinking + two-player zero-sum framing** — the reviewer is rewarded for blocking a real bug, penalized for blocking a phantom. Asymmetric incentive prevents drift toward «looks fine to me».
+4. **Tool-interactive verification** — every claim must be backed by running code (`grep`, `Read`, `pytest`). Claim without execution = `[UNVERIFIED]` and gets downgraded.
+5. **Calibrated confidence** — Brier-score recalibration against logged outcomes, not raw model probabilities. Stops the model from saying «99% certain» when its actual hit rate is 60%.
 
-Plus the **MARS pattern** — independent reviewers + meta-reviewer, **no cross-talk** — to avoid groupthink (per arxiv 2503.12029).
+Plus the **MARS pattern** — short for **Multi-Agent Reviewers in Separation**: each reviewer writes its findings alone, in isolation, then an aggregator merges them. No debate between reviewers, no cross-talk, no chance to anchor on each other. Free-for-all multi-agent debate (everyone reads everyone) actually performs *worse* than independent reviewers — see [_Stop Overvaluing MAD_, 2025](https://arxiv.org/abs/2502.08788) for the empirical result. Independent + aggregator is the same lesson production audit firms learned a century ago.
 
 ## How to install
 
@@ -146,14 +156,14 @@ See [docs/HOOKS.md](docs/HOOKS.md) for setup recipes.
 
 We're the only one that hits all 7 axes simultaneously.
 
-## SOTA-2026 features
+## Design features
 
-- **Heterogeneous multi-model jury** routing across Claude Opus 4.7 / Codex GPT-5.5 / DeepSeek R1 / Gemini 2.5 — `≥2/3` agreement threshold prevents single-family correlated errors
-- **Anti-sycophancy framing** strips implementer's reasoning trace before passing to reviewers (per Anthropic Orr 2026 — `9/10` Critical findings when redacted vs `6-7/10` when framed)
-- **Tool-interactive verification** — every claimed finding is executed against actual source. No `[UNVERIFIED]` allowed in final output
-- **Calibrated confidence** via Brier-score recalibration on a sliding window of logged outcomes
-- **Steelman schema** — every finding ships with: (a) steelman of the original code, (b) attack vector, (c) verifiable `file:line`, (d) reproducible failing test
-- **Independence-gate subagent** for self-critique (the **MARS pattern**, not free-for-all debate)
+- **Heterogeneous multi-model jury** routes across Claude Opus 4.7 / Codex GPT-5.5 / DeepSeek R1 / Gemini 2.5. `≥2/3` agreement threshold prevents single-family correlated errors — when two different model families both agree a bug is real, it usually is.
+- **Anti-sycophancy framing** strips the implementer's reasoning trace before passing the diff to reviewers. Anthropic's internal 2026 work measured 9/10 Critical-severity findings when the trace was redacted, vs 6-7/10 when reviewers saw «here's what I was trying to do».
+- **Tool-interactive verification** — every claimed finding is executed against actual source code (`grep` / `Read` / `pytest`). `[UNVERIFIED]` claims get downgraded and never end up in the final output.
+- **Calibrated confidence** via Brier-score recalibration on a sliding window of logged outcomes. Raw model «98% certain» is noise; calibrated «72% certain, hit rate matches over last 50 calls» is signal.
+- **Steelman finding schema** — every output ships four things: (a) the strongest case FOR the original code, (b) the attack vector, (c) a verifiable `file:line`, (d) a reproducible failing test. Three of the four can be checked without re-running the LLM.
+- **MARS pattern** (**M**ulti-**A**gent **R**eviewers in **S**eparation) — independent reviewers + aggregator, no debate between them. Free-for-all multi-agent debate underperforms independent + merge (see [_Stop Overvaluing MAD_, 2025](https://arxiv.org/abs/2502.08788)).
 
 ## Limitations
 

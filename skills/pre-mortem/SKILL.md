@@ -1,12 +1,13 @@
 ---
 name: steelman:pre-mortem
-description: Use this skill BEFORE making an architectural decision / major migration / hot-path refactor / new dependency adoption / data-model change — i.e. before the decision is locked in. Applies Klein's pre-mortem (HBR 2007) — past-tense framing "two weeks from now, this failed catastrophically — why?" — which surfaces 30%+ more candid risk than forward-looking analysis. Use specifically when (a) the user is about to commit to an architectural choice and says «давай так сделаем» / «let's go with X» / «решено», (b) before starting a major phase / migration / dependency upgrade, (c) the user explicitly asks for «pre-mortem» / «failure modes» / «what could go wrong». Do NOT use after the change has shipped — that's post-mortem territory.
+description: Use BEFORE locking in an architectural decision, major migration, hot-path refactor, new dependency adoption, or data-model change — while the choice is still reversible. The skill reframes the question in past tense: «move forward two weeks; the decision shipped; it failed catastrophically — what happened?». That framing unlocks «prospective hindsight» and surfaces about 30% more candid risk than forward-looking «what could go wrong?» analysis. Triggers: «давай так сделаем», «let's go with X», «решено» — right before commitment; before starting a major phase, migration, or dependency upgrade; explicit «pre-mortem», «failure modes», «what could go wrong». NOT after the change has shipped — that's post-mortem territory.
 ---
 
 # steelman:pre-mortem
 
-> **Mandate** (per Klein, HBR 2007, validated across 20+ industry studies):
-> Move forward in time. The decision shipped. Two weeks later, you wake up to find it failed catastrophically. Tell me — what happened?
+> **Mandate:** Move forward in time. The decision shipped. Two weeks later, you wake up to find it failed catastrophically. Tell me — what happened?
+
+Based on Klein's pre-mortem technique (HBR, 2007), now standard practice in operational risk analysis.
 
 ## Why this framing
 

@@ -1,12 +1,11 @@
 ---
 name: steelman:attack-fix
-description: Use this skill when the user has a HIGH-BLAST-RADIUS code change (touching migrations / publish path / production data / security boundary) and wants formal adversarial review BEFORE deploying or merging. Spawns up to 3 reviewers (multi-AI jury — Claude + Codex + optional 3rd), strips implementer's reasoning trace, outputs each finding with steelman + counter + verifiable file:line + reproducible failing test. Wall-clock 5-10 min, cost ~$0.50-2. Use specifically when (a) the user explicitly says «attack my fix» / «devil's advocate this» / «разнеси мой фикс», (b) the diff touches `migrations/` / `src/main.py` / publish-stack / security gates, (c) the user is about to deploy AI-generated code without human review. Do NOT use for routine commits (use `steelman:devils-pair` — same logic, 60s, 2 reviewers). Do NOT use for style (use ruff/prettier).
+description: Use when a code change has HIGH BLAST RADIUS — touches migrations, the publish path, production data, or a security boundary — and you want a hard adversarial review BEFORE deploying or merging. Up to 3 independent reviewers (different model families) attack the diff in parallel: each builds the strongest case AGAINST the change. The implementer's reasoning trace is stripped first so reviewers can't be primed by «here's what I was trying to do». Output: each finding ships with a verifiable file:line + a reproducible failing test. 5-10 min wall-clock, ~$0.50-2. Triggers: «разнеси мой фикс», «devil's advocate this», «attack my fix», diff touches `migrations/` or `src/main.py` or publish-stack or security gates, AI-generated code about to deploy without human review. NOT for routine commits — use `devils-pair` (60s, 2 reviewers). NOT for style — use linters.
 ---
 
 # steelman:attack-fix
 
-> **Mandate** (per Catholic Church 1587, Prussian Kriegsspiel 1812, CIA Team B 1976, Anthropic Orr 2026):
-> Your job is to build the strongest case AGAINST this fix. Charity-of-interpretation is the enemy. If the fix looks correct, you have not looked hard enough.
+> **Mandate:** Build the strongest case AGAINST this fix. Charity-of-interpretation toward the code is the enemy. If the fix looks correct, you have not looked hard enough.
 
 ## Inputs
 
@@ -185,7 +184,10 @@ Final report to the user with this structure:
 
 2. **Only 1 provider reachable** — Drop to dialectical-bootstrap (Step 3 fallback). Tag the verdict `single-provider-bootstrap` so the operator knows confidence is reduced.
 
-3. **`codex exec` times out** — Reduce the diff chunk size, retry once. If still failing, mark Reviewer B as `OFFLINE` and proceed with 2-reviewer panel; tag confidence as reduced.
+3. **`codex exec` times out / returns empty output** — Most common cause: `--sandbox read-only` + a prompt that tells the model to read files. Codex burns the full timeout on file IO and produces no response; the wrapper exit code may still be 0 (silent failure). Two mitigations:
+   - **First retry:** add explicit «DO NOT read any files — attack the diff inline only.» directive, cap findings (max 4), require `\`\`\`json` fence wrap.
+   - **Second retry:** use stdin redirect (`codex exec < prompt.txt`) instead of command-line string — avoids backtick/quote escaping bugs that cause the shell to drop the prompt mid-flight.
+   - If still failing, mark Reviewer B as `OFFLINE` and proceed with 2-reviewer panel (Claude Agent file-grounded + dialectical-bootstrap on Claude); tag confidence as reduced. See `ugolovkin-diagnostic-lessons` §16 for the field-tested pattern.
 
 4. **Diff is huge (>1k LOC)** — Decompose by file or by hunk. Run jury per-chunk. Aggregate. Per [Sonar Foundation Agent (Nov 2025)](https://www.sonar.dev/blog/sonar-foundation-agent-79-2-swe-bench-verified/), single-agent with great tools beats free-MAD on large changes — apply the same lesson here.
 

@@ -21,6 +21,27 @@
 
 set -u
 
+# Filter: only fire on `git push` invocations.
+#
+# Claude Code's PreToolUse hook fires on every Bash tool call when matcher is
+# "Bash" in settings.json. To restrict to `git push`, read the tool input from
+# stdin (JSON) and short-circuit silently if the command is not a push.
+#
+# 2026-05-19 hotfix: removes the global `exit 0` bypass added earlier while
+# diagnosing the matcher issue. Operator-binding decision: option (a) — patch
+# at hook script (filtering inside) instead of changing matcher schema in
+# settings.json (which Claude Code doesn't accept for command-pattern filters
+# on Bash). See task #4 in session ee7b0652.
+TOOL_INPUT_JSON=$(cat 2>/dev/null || true)
+if [ -n "$TOOL_INPUT_JSON" ]; then
+    # Cheap substring grep: false positives only on commands that literally
+    # contain `git push` as a token (which is fine — we still gate on
+    # high-blast paths inside the diff before doing any real work).
+    if ! printf '%s' "$TOOL_INPUT_JSON" | grep -qE '"command"\s*:\s*"[^"]*git[[:space:]]+push'; then
+        exit 0
+    fi
+fi
+
 [ -n "${STEELMAN_DISABLED:-}" ] && exit 0
 [ -z "${STEELMAN_HIGH_BLAST_PATHS:-}" ] && exit 0
 

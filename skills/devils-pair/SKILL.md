@@ -1,6 +1,6 @@
 ---
 name: steelman:devils-pair
-description: Use this skill when the user wants a fast adversarial sanity check on a small code change mid-edit BEFORE running the full attack-fix pipeline. Spawns exactly 2 reviewers — same-family and cross-family — in parallel, each returning a one-paragraph verdict in ≤60 seconds wall-clock. Use specifically when (a) the user has staged a small change and wants quick "good to commit?" cross-AI check, (b) before a `git push` and the user wants ~1 minute of cross-AI safety over zero, (c) the user explicitly says «быстро проверь» / «devils pair» / «quick adversarial check». Do NOT use as a substitute for full attack-fix — this is a screen, not a thorough review. Findings here are weaker confidence than attack-fix and should be treated as «smell test passed» not «verified safe».
+description: Use when you've staged a small code change (≤200 LOC) and want a fast cross-AI sanity check before commit or push. Two reviewers — one same-family, one cross-family — each return a one-paragraph verdict in ≤60 seconds. Smell-test, not a deep review. Triggers: «быстро проверь», «devils pair», «quick adversarial check», before `git push` on a small change, the user wants ~1 minute of cross-AI safety over zero. NOT a substitute for `attack-fix` on high-blast-radius changes — findings here have weaker confidence than attack-fix, treat as «smell test passed» not «verified safe».
 ---
 
 # steelman:devils-pair
@@ -9,9 +9,9 @@ description: Use this skill when the user wants a fast adversarial sanity check 
 
 ## Why this skill exists
 
-`steelman:attack-fix` takes 5-10 minutes wall-clock (3-reviewer jury + tool-interactive verification + aggregation). For an 8-line change to a logging statement, that's overkill. But zero adversarial review is too little — same-family LLM coding assistants are systemically sycophantic.
+`steelman:attack-fix` takes 5-10 minutes wall-clock (3-reviewer jury + tool-interactive verification + aggregation). For an 8-line change to a logging statement, that's overkill. But zero adversarial review is too little — same-family LLM coding assistants share blind spots and tend to agree with the framing they were given.
 
-`devils-pair` is the **fastest non-trivial adversarial review** that still has cross-family safety. It's a smell-test, not a deep review.
+`devils-pair` is the **fastest non-trivial adversarial review** that still has cross-family safety. The two reviewers run in isolation — see results, not each other's reasoning — so they can't anchor to the same wrong conclusion. It's a smell-test, not a deep review.
 
 ## Inputs
 

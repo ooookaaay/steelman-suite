@@ -1,6 +1,6 @@
 ---
 name: steelman:verify-claim
-description: Use this skill for LIGHTWEIGHT verification of a single file:line bug claim — no multi-AI jury, no spawn, no token cost beyond a few greps and reads. Returns CONFIRMED / FALSIFIED / UNVERIFIABLE in ≤10 seconds wall-clock. Use specifically when (a) the user wants to check ONE claim against the source code without spinning up the full attack-finding jury, (b) inside another skill's chain (verify before deeper review), (c) the user pastes a single specific bug claim and asks «правда ли», (d) you're triaging through a long list of findings and want fast filtering. The skill is mechanical (grep/sed/git) — no LLM reasoning beyond pattern matching. For deeper analysis with calibrated confidence + cross-AI jury, use `steelman:attack-finding` instead.
+description: Use for LIGHTWEIGHT verification of a SINGLE file:line bug claim — no jury, no agent spawn, no LLM cost beyond a few greps and reads. Returns CONFIRMED / FALSIFIED / UNVERIFIABLE in ≤10 seconds wall-clock. Mechanical only: grep / sed / git. No LLM reasoning beyond pattern matching. Use when: (a) you need to check ONE specific claim without spinning up the full `attack-finding` jury, (b) inside another skill's chain to filter before deeper review, (c) the user pastes a single bug claim and asks «правда ли», (d) you're triaging a long list of findings and want fast filtering. For deeper analysis with calibrated confidence + cross-AI jury, use `attack-finding`.
 ---
 
 # steelman:verify-claim
@@ -11,7 +11,7 @@ description: Use this skill for LIGHTWEIGHT verification of a single file:line b
 
 Most LLM-claimed bugs cite a specific `file:line`. The cheapest possible verification is to just **read the cited line + immediate surroundings + grep for the symbol**. If the claim describes code that doesn't exist there, or if a guarding `if` clause is already present, the claim is dead — no jury needed.
 
-Field example: in the 2026-05-18 audit cycle, ~10 of 47 HIGH findings were verifiable as `UNCLEAR` or `LATENT` purely from `grep` + `sed` evidence. Running the full jury on those would have been wasted credits.
+A typical audit cycle shows about 1 in 5 HIGH findings can be falsified or marked LATENT purely from `grep` + `sed` evidence. Running the full jury on those is wasted credits. This skill is the fast filter.
 
 ## Inputs
 

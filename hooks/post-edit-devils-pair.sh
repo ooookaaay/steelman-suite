@@ -5,12 +5,12 @@
 # `steelman:devils-pair` (Codex + Claude in parallel, ~60s) when cumulative
 # uncommitted change reaches the LOC threshold.
 #
-# DESIGN PRINCIPLES (per operator binding feedback_no_overengineering +
-# the SOTA-2026 methodology research):
+# DESIGN PRINCIPLES (per operator binding feedback_no_overengineering):
 # - Fires in BACKGROUND. Never blocks the agent's next tool call.
 # - LOC threshold gate (default 25). Small changes get skipped.
 # - One pair per ~5 minutes max — debounced via stamp file.
-# - Codex + Claude run INDEPENDENTLY (MARS pattern, no cross-talk).
+# - Codex + Claude run INDEPENDENTLY — MARS pattern (Multi-Agent Reviewers
+#   in Separation): no cross-talk during review, aggregator merges after.
 # - Disagreement → meta-judge subagent decides; output to ../.steelman-cache/.
 # - Reports back via OSC9 + structured stdout the harness can render.
 #

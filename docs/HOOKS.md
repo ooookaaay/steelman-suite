@@ -91,11 +91,15 @@ This IS the "Codex argues with Claude, Claude argues with Codex, and somehow
 it gets resolved" you wanted — but as **MARS pattern** (independent reviews +
 meta-judge on conflict), not as direct debate.
 
-Per the SOTA-2026 research dossier shipped with this suite, free-MAD (direct
-back-and-forth debate) does NOT beat single-agent on code review (per
-[_Stop Overvaluing MAD_, arxiv 2502.08788](https://arxiv.org/abs/2502.08788)).
-MARS — independent reviewers + a meta-reviewer — is the architecture top
-shops actually use ([MARS, arxiv 2509.12054](https://arxiv.org/abs/2509.12054)).
+Empirically, free-form Multi-Agent Debate (direct back-and-forth between
+reviewers) does NOT beat single-agent on code review — see
+[_Stop Overvaluing MAD_, arxiv 2502.08788](https://arxiv.org/abs/2502.08788).
+The **MARS pattern** — short for **Multi-Agent Reviewers in Separation** —
+runs reviewers independently with no cross-talk, then has a meta-reviewer
+merge their findings. That's the architecture production audit firms have
+used for decades; it consistently outperforms free-MAD on whole-repo work.
+See [MARS, arxiv 2509.12054](https://arxiv.org/abs/2509.12054) for the
+formal write-up.
 
 ### Install
 

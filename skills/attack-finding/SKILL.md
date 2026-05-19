@@ -1,18 +1,19 @@
 ---
 name: steelman:attack-finding
-description: Use this skill when the user has an existing claimed bug, audit finding, security issue report, or CVE-style claim and wants formal meta-review BEFORE acting on it. The skill verifies the claim against actual source code, runs heterogeneous multi-AI jury, and returns a calibrated REAL / FALSE-POSITIVE / BY-DESIGN / LATENT-NOT-FIRE verdict with execution evidence. Use specifically when (a) the user pastes a bug claim from another AI / static analyzer / audit report and asks "is this real?" / «правда ли это» / «codex говорит что», (b) a CodeRabbit / Sonar / Snyk finding lands in PR and needs triage before fixing, (c) the user is about to write a fix based on an AI claim and you want to confirm the underlying bug exists. Do NOT use to attack a CHANGE the user just made — that's `steelman:attack-fix`. This skill attacks a CLAIM about existing code.
+description: Use when there's an EXISTING bug claim — from another AI, static analyzer, audit report, or human teammate — and you need to know if it's REAL before writing a fix. The skill verifies the claim against actual source code (Read + Grep + reachability checks) and returns a calibrated verdict — REAL / FALSE-POSITIVE / BY-DESIGN / LATENT-NOT-FIRE — with concrete file:line evidence. Best for triaging Codex / CodeRabbit / Sonar findings, deciding "is this AI-claimed bug actually a bug?", deciding whether a flagged issue deserves a fix or stays as-is. Triggers: «правда ли это», «codex говорит что», a pasted bug report from another tool. NOT for attacking a CHANGE the user just made — that's `attack-fix`. NOT for fast single-line lookups — use `verify-claim` (10s, mechanical only).
 ---
 
 # steelman:attack-finding
 
-> **Mandate** (per OpenAI CriticGPT 2024 — 60% of LLM-claimed bugs are wrong about something material):
-> Your job is to **falsify the claim**, not to confirm it. The default verdict is FALSE until proven REAL by execution evidence.
+> **Mandate:** Try to FALSIFY the claim, not to confirm it. The default verdict is FALSE until proven REAL by execution evidence.
 
 ## Why this skill exists
 
-LLM bug claims have a known precision problem. Codex meta-review of itself (2026-05-18 ugolovkin audit cycle) found **6 of 21 HIGH findings were dormant** (flag off / migration applied / unreachable) — codex systematically over-rates severity when it can't verify production reachability. Static analyzers do this too. Single-shot LLM reviews can hallucinate function signatures and miss `if guard:` clauses.
+LLM bug claims have a known precision problem — about 60% of them are wrong about something material (the function signature, the call site, the reachability gate, the migration that made it irrelevant). Static analyzers and CodeRabbit-style tools share the same failure mode: they pattern-match on the source but can't tell whether the buggy code path is actually reachable in production.
 
-Triage is cheap. Skip it and you waste a deploy cycle fixing a phantom.
+Triage is cheap (5-10 min, ~$0.50). Skip it and you waste a deploy cycle fixing a phantom — or worse, refactor live code based on a hallucinated function signature.
+
+A concrete example from a 2026-05-18 audit: six out of twenty-one HIGH findings turned out to be dormant — the buggy code was behind a flag that was off, or had been silently patched by a later migration, or lived in a branch that no current callsite reached. Acting on those claims without triage would have shipped six pointless fixes.
 
 ## Inputs
 

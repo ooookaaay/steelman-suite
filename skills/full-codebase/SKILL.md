@@ -1,17 +1,19 @@
 ---
 name: steelman:full-codebase
-description: Use this skill when the user wants a comprehensive adversarial pass on the ENTIRE repository — not a single commit or finding. Decomposes src/ by domain (parallel subagents per domain), spawns multi-AI jury per domain, aggregates into a single TRIAGE.md with severity-sorted findings. Use specifically when (a) the user asks "проверь весь код" / "audit the whole codebase" / «натрави на весь репо» / «full attack pass», (b) before a major release / merge to main, (c) after a long autonomous coding session and the user wants a safety sweep. Cost: ~30-60 minutes wall-clock, ~$5-20 in LLM costs. Use sparingly — for incremental review use attack-fix or devils-pair.
+description: Use when you want a thorough adversarial pass on the ENTIRE codebase — not a single commit or claim. The skill splits `src/` into ≤5 functional domains (by LOC and topical cohesion), runs an independent reviewer per domain in parallel, then aggregates into one TRIAGE.md sorted by severity. Each reviewer applies the same attack-fix discipline (anti-sycophancy, strip-reasoning, file:line evidence) but scoped to its domain. 30-60 min wall-clock, ~$5-20. Triggers: «проверь весь код», «audit the whole codebase», «натрави на весь репо», «full attack pass», before a major release or merge to main, after a long autonomous coding session when you want a safety sweep. Use sparingly — for incremental review go through `attack-fix` or `devils-pair`.
 ---
 
 # steelman:full-codebase
 
-> **Mandate:** Find every blocker in this codebase before it reaches production. Time-box: 60 min. Domain-parallel, MARS aggregation.
+> **Mandate:** Find every blocker in this codebase before it reaches production. Time-box: 60 min. Domain-parallel, isolated reviewers, aggregator-merged.
 
 ## Why this skill exists
 
-Single-shot whole-repo reviews don't scale — codex (and Claude) blow context on a 60k-LOC repo and produce shallow generic findings. The fix is the same one production audit firms use: **domain decomposition**. Split the codebase into ≤5 functional domains, run independent reviewers per domain in parallel, then have a meta-reviewer consolidate.
+Single-shot whole-repo reviews don't scale. Codex (and Claude) blow context on a 60k-LOC repo and produce shallow generic findings — «consider adding error handling here», «this could be more Pythonic» — because they can't hold enough of the codebase in working memory to spot real architecture-level bugs.
 
-This skill encodes that pattern + the SOTA-2026 design contract (heterogeneous jury per domain, strip-reasoning, tool-interactive verification, calibrated confidence).
+The fix is the same one production audit firms have used for a century: **domain decomposition**. Split the codebase into ≤5 functional domains (storage, publish, processing, etc), run one focused reviewer per domain in parallel, then have an aggregator merge results. Each reviewer holds its slice in working memory; the aggregator only has to merge findings, not re-derive them.
+
+This skill encodes that pattern plus the suite's design contract: heterogeneous jury per domain (different model families), strip the implementer's reasoning trace, tool-interactive verification (every claim grounded by `Read` / `grep` / running code), calibrated confidence. Reviewers run in isolation — they can't see each other's findings during the review — so they can't anchor on each other's wrong conclusions. This is the **MARS pattern** (Multi-Agent Reviewers in Separation), and it consistently outperforms free-for-all multi-agent debate.
 
 Field example: the 2026-05-18 ugolovkin audit cycle ran this pattern manually (5 parallel codex audits across cascade / publish / storage / orchestration / eval-ingestion). Found ~149 issues, 47 HIGH. 14 confirmed-real after triage. **This skill automates that pattern.**
 
@@ -165,5 +167,5 @@ Manual invocation only:
 
 ## References
 
-- Field example: the 2026-05-18 ugolovkin run executed this pattern manually — 5 codex audits + 4 devils-advocate agents + 2 SOTA-research agents = 11 parallel agents over ~4 hours. Result: 14 confirmed-real fixes shipped to v2-dev (commits 429d93a4..36aab297), 32 findings triaged into latent/by-design buckets.
+- Field example: the 2026-05-18 ugolovkin run executed this pattern manually — 5 codex audits + 4 devils-advocate agents + 2 background-research agents = 11 parallel agents over ~4 hours. Result: 14 confirmed-real fixes shipped to v2-dev (commits 429d93a4..36aab297), 32 findings triaged into latent/by-design buckets.
 - [Sonar Foundation Agent (Nov 2025), 79.2% SWE-bench Verified](https://www.sonar.dev/blog/sonar-foundation-agent) — single-agent with great tools beats free-MAD on whole-repo; this skill applies the same lesson at the domain level (one strong agent per domain, no debate between them).
