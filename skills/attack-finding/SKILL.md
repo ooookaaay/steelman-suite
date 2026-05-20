@@ -1,6 +1,6 @@
 ---
 name: steelman:attack-finding
-description: Use when there's an EXISTING bug claim — from another AI, static analyzer, audit report, or human teammate — and you need to know if it's REAL before writing a fix. The skill verifies the claim against actual source code (Read + Grep + reachability checks) and returns a calibrated verdict — REAL / FALSE-POSITIVE / BY-DESIGN / LATENT-NOT-FIRE — with concrete file:line evidence. Best for triaging Codex / CodeRabbit / Sonar findings, deciding "is this AI-claimed bug actually a bug?", deciding whether a flagged issue deserves a fix or stays as-is. Triggers: «правда ли это», «codex говорит что», a pasted bug report from another tool. NOT for attacking a CHANGE the user just made — that's `attack-fix`. NOT for fast single-line lookups — use `verify-claim` (10s, mechanical only).
+description: Use when there's an EXISTING bug claim — from another AI, static analyzer, audit report, or human teammate — and you need to know if it's REAL before writing a fix. The skill verifies the claim against actual source code (Read + Grep + reachability checks) and returns a categorical verdict — REAL / FALSE-POSITIVE / BY-DESIGN / LATENT-NOT-FIRE — with concrete file:line evidence. Best for triaging Codex / CodeRabbit / Sonar findings, deciding "is this AI-claimed bug actually a bug?", deciding whether a flagged issue deserves a fix or stays as-is. Triggers: «правда ли это», «codex говорит что», a pasted bug report from another tool. NOT for attacking a CHANGE the user just made — that's `attack-fix`. NOT for fast single-line lookups — use `verify-claim` (10s, mechanical only).
 ---
 
 # steelman:attack-finding
@@ -168,7 +168,7 @@ Aggregate with a **falsification bias** — REAL requires positive evidence, FAL
 ## Verdict
 **{CONFIRMED REAL | LATENT-NOT-FIRE | BY-DESIGN | FALSE-POSITIVE | NEEDS-OPERATOR-INPUT | LIKELY-FALSE-POSITIVE}**
 
-Calibrated confidence: {0-1} — {N} reviewers, falsification-weighted
+Reviewer agreement: {N}/{M} reviewers concur — falsification-weighted (Brier-calibrated confidence: v0.3 roadmap)
 
 ## Source claim
 {quoted}

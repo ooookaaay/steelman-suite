@@ -1,7 +1,7 @@
 {
   "name": "steelman-suite",
-  "version": "0.2.1",
-  "description": "Multi-AI devil's advocate skill suite for Claude Code / Codex / Cursor / any Agent Skills host. Reviewers build the strongest case AGAINST your code in isolation, then an aggregator merges findings. Heterogeneous jury + tool-interactive verification + calibrated confidence + steelman finding schema.",
+  "version": "0.2.2",
+  "description": "Multi-AI devil's advocate skill suite for Claude Code / Codex / Cursor / any Agent Skills host. Reviewers build the strongest case AGAINST your code in isolation, then an aggregator merges findings. Heterogeneous jury + tool-interactive verification + categorical cross-family verdicts + steelman finding schema.",
   "author": "ooookaaay",
   "license": "MIT",
   "homepage": "https://github.com/ooookaaay/steelman-suite",
@@ -25,7 +25,7 @@
     {
       "name": "steelman:attack-fix",
       "path": "skills/attack-fix/SKILL.md",
-      "description": "Multi-AI jury attacks a specific commit / diff. Strips implementer's reasoning trace before review. Outputs steelman + counter + verifiable file:line + calibrated confidence."
+      "description": "Multi-AI jury attacks a specific commit / diff. Strips implementer's reasoning trace before review. Outputs steelman + counter + verifiable file:line + reproducible failing test."
     },
     {
       "name": "steelman:attack-finding",

@@ -13,7 +13,7 @@ Single-shot whole-repo reviews don't scale. Codex (and Claude) blow context on a
 
 The fix is the same one production audit firms have used for a century: **domain decomposition**. Split the codebase into ≤5 functional domains (storage, publish, processing, etc), run one focused reviewer per domain in parallel, then have an aggregator merge results. Each reviewer holds its slice in working memory; the aggregator only has to merge findings, not re-derive them.
 
-This skill encodes that pattern plus the suite's design contract: heterogeneous jury per domain (different model families), strip the implementer's reasoning trace, tool-interactive verification (every claim grounded by `Read` / `grep` / running code), calibrated confidence. Reviewers run in isolation — they can't see each other's findings during the review — so they can't anchor on each other's wrong conclusions. This is the **MARS pattern** (Multi-Agent Reviewers in Separation), and it consistently outperforms free-for-all multi-agent debate.
+This skill encodes that pattern plus the suite's design contract: heterogeneous jury per domain (different model families), strip the implementer's reasoning trace, tool-interactive verification (every claim grounded by `Read` / `grep` / running code). Reviewers run in isolation — they can't see each other's findings during the review — so they can't anchor on each other's wrong conclusions. This is the **MARS pattern** (Multi-Agent Reviewers in Separation), and it consistently outperforms free-for-all multi-agent debate.
 
 Field example: the 2026-05-18 ugolovkin audit cycle ran this pattern manually (5 parallel codex audits across cascade / publish / storage / orchestration / eval-ingestion). Found ~149 issues, 47 HIGH. 14 confirmed-real after triage. **This skill automates that pattern.**
 
@@ -66,7 +66,7 @@ Each domain pair writes findings to: `.steelman-cache/{run-id}/AUDIT-{domain}.md
 After all domains return:
 1. Read every per-domain audit
 2. Deduplicate findings (same `file:line` from multiple domains → merge with combined confidence)
-3. Rank by `(severity, calibrated_confidence, blast_radius)` lexicographic descending
+3. Rank by `(severity, reviewer_agreement, blast_radius)` lexicographic descending — `reviewer_agreement` = how many reviewers independently flagged the finding
 4. Apply the **operator-binding contract check** from `steelman:attack-finding` — any finding contradicting a `CLAUDE.md` / `.planning/notes/` binding is reclassified `BY-DESIGN`
 5. Apply the **reachability check** — flag-off / migration-applied / unreachable findings tagged `LATENT-NOT-FIRE`
 6. **+1 cross-family verifier pass (once, here):** run one `codex exec` call (or, Codex absent, one additional Claude Agent-tool subagent) over the merged HIGH findings only — auditing the *jury's findings*, not the code. This is the Tier-3 +1 verifier from `docs/ENGINES.md` §3, applied once at aggregation. Do not re-run it per domain.
@@ -127,7 +127,7 @@ Question: {1 sentence}
 - Cross-talk between domains: no (MARS)
 - Operator-binding contract checked: ✓
 - Reachability checked: ✓
-- Calibrated confidence: yes (Brier-weighted)
+- Calibrated confidence: v0.3 roadmap (current: categorical verdict + cross-family majority)
 ```
 
 ### Step 5 — Optional: emit a fix-plan

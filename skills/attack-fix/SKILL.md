@@ -272,3 +272,4 @@ See `docs/ENGINES.md` for the full contract.
 - [MARS (2025)](https://arxiv.org/abs/2509.12054) — independent reviewers + meta-reviewer, no cross-talk
 - [Anthropic Orr 2026](#) — strip implementer's reasoning trace before review
 - Field-tested 2026-05-18 on [ooookaaay/ugolovkin](https://github.com/ooookaaay/ugolovkin) — caught two real regressions in shipped fixes before they hit prod
+- Field-tested 2026-05-20 on [ooookaaay/ugolovkin](https://github.com/ooookaaay/ugolovkin) — 3 rounds on a ~90-LOC cascade-classifier change that had already passed `ruff`, `mypy --strict`, its unit tests and the F1 regression corpus (all green). Caught a no-op config change, two recall-regression code paths, and one architecturally-unsound sub-change (reverted wholesale) — none detected by the green test suite

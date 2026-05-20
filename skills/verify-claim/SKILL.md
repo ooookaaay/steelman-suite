@@ -1,6 +1,6 @@
 ---
 name: steelman:verify-claim
-description: Use for LIGHTWEIGHT verification of a SINGLE file:line bug claim — no jury, no agent spawn, no LLM cost beyond a few greps and reads. Returns CONFIRMED / FALSIFIED / UNVERIFIABLE in ≤10 seconds wall-clock. Mechanical only: grep / sed / git. No LLM reasoning beyond pattern matching. Use when: (a) you need to check ONE specific claim without spinning up the full `attack-finding` jury, (b) inside another skill's chain to filter before deeper review, (c) the user pastes a single bug claim and asks «правда ли», (d) you're triaging a long list of findings and want fast filtering. For deeper analysis with calibrated confidence + cross-AI jury, use `attack-finding`.
+description: Use for LIGHTWEIGHT verification of a SINGLE file:line bug claim — no jury, no agent spawn, no LLM cost beyond a few greps and reads. Returns CONFIRMED / FALSIFIED / UNVERIFIABLE in ≤10 seconds wall-clock. Mechanical only: grep / sed / git. No LLM reasoning beyond pattern matching. Use when: (a) you need to check ONE specific claim without spinning up the full `attack-finding` jury, (b) inside another skill's chain to filter before deeper review, (c) the user pastes a single bug claim and asks «правда ли», (d) you're triaging a long list of findings and want fast filtering. For deeper analysis with a cross-AI jury, use `attack-finding`.
 ---
 
 # steelman:verify-claim
