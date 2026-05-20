@@ -46,15 +46,17 @@ The framing should be:
 - **Visceral in consequence** (named the bad outcome — "down 36 hours", "press picked it up")
 - **Tied to the operator's actual production context** (use what you know from CLAUDE.md / `.planning/`)
 
-### Step 2 — Spawn pre-mortem jury (≥3 reviewers, parallel, MARS pattern)
+### Step 2 — Spawn pre-mortem jury (3 reviewers, parallel, MARS pattern)
 
 Each reviewer takes a different stance to expand the failure-mode coverage:
 
-| Reviewer | Stance | Mandate |
-|---|---|---|
-| **The senior engineer who joined six months ago** | Knows the codebase, hasn't drunk the kool-aid on this decision | "Tell me the technical failure modes — what does this break that the team hasn't thought about?" |
-| **The on-call who got paged** | Was at the wrong end of this failure mode | "Walk me through the page-to-resolution. What was the symptom? What was the root cause? Why did it take so long to figure out?" |
-| **The skeptic external advisor** | No skin in the game | "Why is this decision wrong? Argue from first principles." |
+| Reviewer | Engine | Stance | Mandate |
+|---|---|---|---|
+| **The senior engineer who joined six months ago** | Agent-tool Claude subagent (fresh isolated context, model=opus). Never `claude -p`. | Knows the codebase, hasn't drunk the kool-aid on this decision | "Tell me the technical failure modes — what does this break that the team hasn't thought about?" |
+| **The on-call who got paged** | `codex exec` via Bash (see `docs/ENGINES.md` §4b for the invocation recipe) | Was at the wrong end of this failure mode | "Walk me through the page-to-resolution. What was the symptom? What was the root cause? Why did it take so long to figure out?" |
+| **The skeptic external advisor** | Agent-tool Claude subagent (fresh isolated context, distinct adversarial framing) | No skin in the game | "Why is this decision wrong? Argue from first principles." |
+
+**Codex absent:** all three are Agent-tool Claude subagents. The three distinct stances already provide the independence that matters — context isolation + adversarial framing. Emit the honest single-provider label from `docs/ENGINES.md` §5. Never spawn more than these 3 stances.
 
 Each reviewer returns a list of failure modes with:
 - Trigger condition (what initiated the failure)
@@ -127,6 +129,19 @@ Field case (ugolovkin v2.15, 2026-05-19): a pre-mortem on a hotfix design correc
 - The user's message contains «pre-mortem» / «premortem» / «failure modes» / «что может сломаться»
 - The user says «давай делать X» / «let's go with X» AND no prior pre-mortem was run for X
 - A `phase-spec` / `decision-doc` / ADR markdown file is being written or committed AND no companion `pre-mortem.md` exists yet
+
+## Engine routing
+
+**Tier: 3 stances (design, not diff) — no static diff gate.**
+
+This skill reviews an architectural decision, not a code diff. There is no LOC-based pre-gate; the decision to run pre-mortem is already the operator's explicit call.
+
+- **Codex present:** "senior engineer" = Claude Agent-tool subagent; "on-call" = `codex exec`; "skeptic" = Claude Agent-tool subagent. All three run in parallel, isolated (MARS pattern).
+- **Codex absent:** all three are Agent-tool Claude subagents. The three distinct stances provide context isolation and adversarial framing — the two interventions that cut sycophantic review. Emit the honest single-provider label from `docs/ENGINES.md` §5.
+- Never spawn more than 3 stances; never spawn a fourth as aggregator (the orchestrator aggregates).
+- Aggregator / meta-judge = the orchestrator. No debate between reviewers.
+
+See `docs/ENGINES.md` §6 for the full contract.
 
 ## Related skills
 

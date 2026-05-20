@@ -46,19 +46,22 @@ If fewer than 5 domains, just use what's there. If more than 5, group the smalle
 
 If the user provides `--domains`, skip auto-detection.
 
-### Step 2 — Spawn one `steelman:attack-fix`-style subagent per domain (parallel)
+### Step 2 — Spawn reviewers per domain (parallel)
 
-Each subagent receives:
-- The list of files in its domain
-- Mandate to apply `steelman:attack-fix` logic on the CURRENT HEAD (not a diff) — i.e. review all code as if it just landed
-- The same anti-sycophancy / strip-reasoning / multi-AI-jury contract
-- Time-box: 25 minutes per domain
+**Domain pre-gate:** with `--since`, compute which files in each domain changed. Domains with zero changed files are skipped entirely — no reviewer is spawned for them.
 
-Subagents run independently — **no cross-talk between domains** (MARS pattern).
+For each remaining domain, spawn **two parallel reviewers in isolation** (MARS pattern, no cross-talk between domains):
 
-Each writes to a per-domain file: `.steelman-cache/{run-id}/AUDIT-{domain}.md`.
+- **Reviewer A (Claude):** Agent-tool subagent scoped to the domain's file list. Applies `steelman:attack-fix` attack discipline on CURRENT HEAD (code treated as if it just landed). Never use `claude -p`. Time-box: 25 minutes.
+- **Reviewer B (Codex):** `codex exec` call over the domain's file list (see `docs/ENGINES.md` §4b for invocation recipe). Same attack discipline, independent context.
 
-### Step 3 — Aggregate (meta-reviewer pass)
+**Codex absent:** both A and B are Agent-tool Claude subagents for that domain, with distinct adversarial stances. Emit the honest single-provider label from `docs/ENGINES.md` §5 in the per-domain audit header.
+
+Each domain pair writes findings to: `.steelman-cache/{run-id}/AUDIT-{domain}.md`.
+
+**The +1 cross-family verifier runs ONCE at Step 3 aggregation** over the merged HIGH findings — not per domain. Do not spawn a verifier per domain.
+
+### Step 3 — Aggregate (meta-reviewer pass + one cross-family verifier)
 
 After all domains return:
 1. Read every per-domain audit
@@ -66,6 +69,7 @@ After all domains return:
 3. Rank by `(severity, calibrated_confidence, blast_radius)` lexicographic descending
 4. Apply the **operator-binding contract check** from `steelman:attack-finding` — any finding contradicting a `CLAUDE.md` / `.planning/notes/` binding is reclassified `BY-DESIGN`
 5. Apply the **reachability check** — flag-off / migration-applied / unreachable findings tagged `LATENT-NOT-FIRE`
+6. **+1 cross-family verifier pass (once, here):** run one `codex exec` call (or, Codex absent, one additional Claude Agent-tool subagent) over the merged HIGH findings only — auditing the *jury's findings*, not the code. This is the Tier-3 +1 verifier from `docs/ENGINES.md` §3, applied once at aggregation. Do not re-run it per domain.
 
 ### Step 4 — Output single TRIAGE.md
 
@@ -136,7 +140,7 @@ If `--with-fix-plan` is passed, after the TRIAGE.md, also generate `.steelman-ca
 
 2. **One domain's subagent crashes** — Retry once with smaller chunk. If still failing, mark domain as `INCOMPLETE` in the final report; do NOT block the other domains.
 
-3. **`codex exec` rate-limited mid-run** — Switch to dialectical-bootstrap for affected domains. Tag those domains' confidence as reduced.
+3. **`codex exec` rate-limited or unavailable mid-run** — Switch to the Codex-absent path for affected domains (two Agent-tool Claude subagents with distinct stances). Emit the honest single-provider label from `docs/ENGINES.md` §5 in those domains' audit headers. Tag their confidence as reduced.
 
 4. **Cost budget exceeded** — Estimate from per-domain LOC. If projected to exceed `STEELMAN_BUDGET_USD` env var, abort and ask the user to either raise the budget or pass `--quick`.
 
@@ -158,6 +162,18 @@ This skill does **not** auto-trigger by default. It's expensive ($5-20) and slow
 Manual invocation only:
 - `/steelman:full-codebase`
 - Optional pre-release CI gate: wire a GitHub Actions workflow that runs this on `release/*` branches.
+
+## Engine routing
+
+**Tier 3 per domain.**
+
+- **Domain pre-gate:** with `--since`, domains with no changed files are skipped entirely — zero reviewer cost for them.
+- **Codex present:** per domain, one Claude Agent-tool subagent (Reviewer A) + one `codex exec` call (Reviewer B) run in parallel. No cross-talk between domains or between reviewers (MARS).
+- **Codex absent:** per domain, two Agent-tool Claude subagents with distinct adversarial stances. Emit the honest single-provider label from `docs/ENGINES.md` §5 in each affected domain's audit header.
+- **+1 verifier:** one `codex exec` call (or orchestrator when Codex absent) runs once at Step 3 aggregation over the merged HIGH findings — not per domain.
+- Aggregator / meta-judge = the orchestrator. Never spawn a reviewer as aggregator.
+
+See `docs/ENGINES.md` §6 for the full contract.
 
 ## Related skills
 

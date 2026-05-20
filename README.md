@@ -53,7 +53,7 @@ Adversarial review is only valuable when its findings are real AND its latency i
 | `steelman:full-codebase` | Pre-release whole-repo pass, domain-parallel |
 | `steelman:pre-mortem` | Klein past-tense failure brainstorm before architectural commitments |
 
-Each skill follows the same design contract (see [docs/HOOKS.md](docs/HOOKS.md)):
+Each skill follows the same design contract — hooks and auto-trigger wiring: [docs/HOOKS.md](docs/HOOKS.md); engine routing, tier selection, and efficiency rules: [docs/ENGINES.md](docs/ENGINES.md):
 
 1. **Heterogeneous multi-model jury** — reviewers come from different model families (Claude / Codex / DeepSeek / Gemini), with ≥2-of-3 agreement required. Same-family LLMs share blind spots; cross-family forces disagreement that's actually informative.
 2. **Strip the implementer's reasoning trace** before review. The reviewer sees the code, not the framing — kills the «I'm sure this is right because the implementer was sure» failure mode.

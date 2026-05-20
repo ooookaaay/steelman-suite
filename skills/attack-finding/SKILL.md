@@ -131,13 +131,14 @@ Recommendation: keep in backlog with `latent` tag. Re-evaluate when the gate ope
 
 Per [Heuer's ACH](https://www.cia.gov/library/center-for-the-study-of-intelligence/csi-publications/books-and-monographs/psychology-of-intelligence-analysis/index.html): **score evidence by disproof, not proof.** The reviewers' job is to find one specific way the claim is wrong.
 
-Spawn 2-3 independent reviewers (no cross-talk, MARS pattern):
+Spawn 2 independent reviewers (no cross-talk, MARS pattern). This skill is bounded to one claim — never run a 3-reviewer jury here; use `attack-fix` for that:
 
-| Reviewer | Family | Falsification stance |
+| Reviewer | Engine | Falsification stance |
 |---|---|---|
-| Reviewer A | Same family as the claimant (if known) | "What did the original analysis miss that would make this NOT a bug?" |
-| Reviewer B | Cross-family | "Is there a `if guard:` upstream that prevents this failure mode from triggering?" |
-| Reviewer C | Optional, if available | "Has this been fixed in a commit the claimant didn't see? Check `git log -p $file`" |
+| Reviewer A | Agent-tool Claude subagent (fresh isolated context). Never `claude -p`. | "What did the original analysis miss that would make this NOT a bug? Check reachability + source." |
+| Reviewer B | `codex exec` via Bash (see `docs/ENGINES.md` §4b). Returns independent REAL / FALSE / BY-DESIGN / LATENT verdict. | "Is there a `if guard:` upstream, a flag that's off, or a fix that landed after the claim was filed? Check `git log -p $file`." |
+
+**Codex absent:** both A and B are Agent-tool Claude subagents with distinct falsification stances. Emit the honest single-provider label from `docs/ENGINES.md` §5. The orchestrator acts as meta-judge when the two disagree.
 
 Each reviewer is required to:
 - Read the cited code IN FULL (not just the line range)
@@ -204,7 +205,7 @@ Calibrated confidence: {0-1} — {N} reviewers, falsification-weighted
 
 2. **Claim cites a deleted file** — Run `git log --follow --diff-filter=D -- <path>` to find when it was deleted. Output: `UNVERIFIABLE — file deleted in commit {hash}`.
 
-3. **Multiple reviewers OFFLINE** — Drop to 1 reviewer + dialectical-bootstrap (2 passes, fresh contexts, opposite temperatures). Tag confidence as reduced.
+3. **Codex unavailable** — Both reviewers become Agent-tool Claude subagents with distinct falsification stances (Codex-absent path in Step 5). Tag confidence as reduced using the honest single-provider label from `docs/ENGINES.md` §5.
 
 4. **The claim is about a binding policy itself** ("this binding is wrong") — Out of scope. Refuse and suggest the user open a discussion with the operator instead.
 
@@ -226,6 +227,18 @@ This skill auto-triggers when:
 - The user's message contains «правда ли», «is this real», «codex говорит», «найдено в audit», «from CodeRabbit», «from Snyk»
 - A new file matching `AUDIT-*.md` / `FINDINGS-*.md` lands in the project's `.planning/` tree
 - The user invokes `/steelman:attack-finding` directly
+
+## Engine routing
+
+**Tier: bounded pair (one claim, one round).**
+
+- **No static diff gate** — this skill reviews a claim, not a diff. Steps 3 and 4 (operator-binding + reachability) perform the equivalent cheap pre-filters before the jury fires.
+- **Codex present:** A = Claude Agent-tool subagent (reachability + source verification stance); B = `codex exec` (independent REAL/FALSE/BY-DESIGN/LATENT verdict).
+- **Codex absent:** A + B = two Agent-tool Claude subagents with distinct falsification stances. Orchestrator acts as meta-judge on disagreement. Emit the honest single-provider label from `docs/ENGINES.md` §5.
+- **One claim only:** never run a 3-reviewer jury inside this skill. If the claim expands into a multi-file investigation, hand off to `attack-fix`.
+- **Disagree → orchestrator meta-judges once.** No escalation chain; one meta-judge pass is the ceiling.
+
+See `docs/ENGINES.md` §6 for the full contract.
 
 ## Related skills
 

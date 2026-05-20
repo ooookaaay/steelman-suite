@@ -19,6 +19,19 @@ If no argument: default to `HEAD`.
 
 ## Procedure
 
+### Step 0 — Static pre-gate (free, runs first)
+
+Before spawning any reviewer, compute from change metadata:
+
+```bash
+LOC=$(git show "$REF" --numstat 2>/dev/null | awk '{a+=$1+$2} END {print a+0}')
+FILES=$(git show "$REF" --name-only 2>/dev/null | grep -c '.')
+```
+
+If `LOC ≤ 25` AND `FILES ≤ 2` AND no high-blast path touched: warn the operator that this is a **Tier-0/1 change** and offer to downgrade to `devils-pair` instead. Do not auto-proceed to a 3-reviewer jury on a trivial diff without acknowledgement.
+
+If a high-blast path IS touched (migrations, auth, publish stack, CI config, or anything in `STEELMAN_HIGH_BLAST_PATHS`): proceed to the full Tier-3 jury — never downgrade these.
+
 ### Step 1 — Acquire the artifact (one-shot, mechanical)
 
 ```bash
@@ -62,13 +75,15 @@ Per [Panel-of-LLM-Judges (Verga 2024)](https://arxiv.org/abs/2404.18796) + [Jury
 
 Spawn in parallel (independent contexts, **no cross-talk** — per MARS pattern):
 
-| Reviewer | Model family | Tool used | Stance |
-|---|---|---|---|
-| Reviewer A | Anthropic (Claude Opus 4.7) | `Agent` tool, subagent | Senior security engineer who saw a previous version of this code break in production |
-| Reviewer B | OpenAI (Codex GPT-5.5) | `Bash` → `codex exec` | Hostile reviewer at a competitor; wants to find anything to dunk on |
-| Reviewer C | DeepSeek R1 OR Gemini 2.5 (if available) | Domain-specific (DeepSeek for cascade-heavy, Gemini for long-context) | Skeptical PhD reviewer evaluating for a top-tier venue |
+| Reviewer | Engine | Stance |
+|---|---|---|
+| Reviewer A | Agent-tool Claude subagent (fresh isolated context, model=opus). Never `claude -p`. | Senior security engineer who saw a previous version of this code break in production |
+| Reviewer B | `codex exec` via Bash (see `docs/ENGINES.md` §4b for the invocation recipe) | Hostile reviewer at a competitor; wants to find anything to dunk on |
+| Reviewer C | Agent-tool Claude subagent (skeptic stance, separate isolated context) | Skeptical PhD reviewer evaluating for a top-tier venue |
 
-If only 1 provider is reachable: fall back to **dialectical bootstrap** — two independent passes with the SAME model, fresh contexts, different temperatures (`T=0.0` and `T=0.8`), and adversarial role-priming. Per Herzog & Hertwig 2009 this captures ~50% of the gain from a true heterogeneous panel.
+**Early exit (Tier-3 quorum rule):** if A and B both return **decisively unanimous** verdicts — both PASS with concrete ruled-out vectors, OR both BLOCK the *same* `file:line` with `execution_evidence` — skip Reviewer C and the `codex exec` verifier (Step 5 meta-judge). Only run the full jury when the first two leave the verdict open.
+
+**Codex absent:** A, B, and C are all Agent-tool Claude subagents with three distinct stances. Emit the honest single-provider label from `docs/ENGINES.md` §5 in the output; the verifier in Step 5 becomes the orchestrator itself (not a spawned reviewer). Per Herzog & Hertwig 2009 this captures ~50% of the gain from a true heterogeneous panel.
 
 Each reviewer receives:
 1. The stripped diff (Step 2 output)
@@ -182,7 +197,7 @@ Final report to the user with this structure:
 
 1. **All reviewers say "looks fine"** — Output "NO CONFIRMED ISSUES" but log to `evals/no-issue-attempts.jsonl`. Over time, if a fix that later breaks shows up here, your calibration is bad — flag for retraining.
 
-2. **Only 1 provider reachable** — Drop to dialectical-bootstrap (Step 3 fallback). Tag the verdict `single-provider-bootstrap` so the operator knows confidence is reduced.
+2. **Codex unavailable** — Drop to three Agent-tool Claude subagents (A, B, C) with three distinct stances per the Codex-absent path in Step 3. Tag the output with the honest single-provider label from `docs/ENGINES.md` §5 so the operator knows confidence is reduced.
 
 3. **`codex exec` times out / returns empty output** — Most common cause: `--sandbox read-only` + a prompt that tells the model to read files. Codex burns the full timeout on file IO and produces no response; the wrapper exit code may still be 0 (silent failure). Two mitigations:
    - **First retry:** add explicit «DO NOT read any files — attack the diff inline only.» directive, cap findings (max 4), require `\`\`\`json` fence wrap.
@@ -216,6 +231,18 @@ Use cases that justify firing:
 - Operator-configured PreToolUse hook on `git push` ONLY when the staged diff touches a path in `STEELMAN_HIGH_BLAST_PATHS` env var (e.g. `migrations/`, `src/main.py`, `src/processing/article_processor.py`) — see [hooks/pre-commit-attack.sh](../../hooks/pre-commit-attack.sh) for the path-scoped opt-in pattern. Default = unconfigured = no hook fires.
 
 For routine commits where the cost-benefit is wrong, use `steelman:devils-pair` (60s) or skip review entirely.
+
+## Engine routing
+
+**Tier 3 — jury + verifier.**
+
+- **Static pre-gate first** (Step 0 above): trivial diff (Tier-0/1 signals) → warn and offer `devils-pair`. High-blast path → always Tier 3, no downgrade.
+- **Codex present:** A = Claude Agent-tool subagent; B = `codex exec`; C = Claude Agent-tool subagent (skeptic). Meta-judge / +1 verifier = `codex exec` over the jury's merged findings. All run in parallel, isolated (MARS).
+- **Codex absent:** A, B, C = three Claude Agent-tool subagents with three distinct stances. Verifier = orchestrator itself. Emit the honest single-provider label from `docs/ENGINES.md` §5.
+- **Early exit:** A + B decisively unanimous → skip C and the verifier. Only escalate to the full jury when the first two leave the verdict open.
+- Aggregator / meta-judge = the orchestrator (you). Never spawn a fourth reviewer as aggregator — that breaks MARS.
+
+See `docs/ENGINES.md` for the full contract.
 
 ## Related skills
 

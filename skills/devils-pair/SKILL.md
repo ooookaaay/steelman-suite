@@ -25,6 +25,19 @@ The skill expects the diff to be ≤200 LOC. For larger diffs, it refuses and po
 
 ## Procedure
 
+### Step 0 — Static pre-gate (free, runs first)
+
+Before any model call, compute from change metadata:
+
+```bash
+LOC_CHANGED=$(git diff --cached --numstat 2>/dev/null | awk '{a+=$1+$2} END {print a+0}')
+FILES_CHANGED=$(git diff --cached --name-only 2>/dev/null | wc -l)
+```
+
+If `LOC_CHANGED ≤ 25` AND `FILES_CHANGED ≤ 2` AND no high-blast path is touched (see `STEELMAN_HIGH_BLAST_PATHS`), the change is **Tier 0 — skip**: say so and exit without spawning reviewers.
+
+If any high-blast path is touched, do not run `devils-pair` — recommend `attack-fix` (high-blast changes are always Tier 3).
+
 ### Step 1 — Acquire and bound
 
 ```bash
@@ -46,15 +59,17 @@ Keep regular code comments — too aggressive a strip for a quick check would lo
 
 ### Step 3 — Spawn 2 reviewers in parallel (single message, no cross-talk)
 
-**Reviewer A — same family (Claude):**
-- Subagent via `Agent` tool, `general-purpose` type, model=opus
-- Stance: «hostile senior engineer, breaks confidence, ≤200 words»
+**Reviewer A — Claude (Agent-tool subagent, murder-board stance):**
+- Spawned via the `Agent` tool (fresh isolated context, model=opus). Never use `claude -p` — nested calls return empty.
+- Stance: «murder-board: hostile senior engineer, breaks confidence, ≤200 words»
 - Prompt: pass the stripped diff + ask for ONE concrete blocker
 
-**Reviewer B — cross-family (Codex):**
-- `codex exec --skip-git-repo-check` synchronous
-- Stance: «adversarial reviewer at competitor, ≤200 words»
+**Reviewer B — Codex (cross-family, hostile-competitor stance):**
+- Invoked via `codex exec` Bash call (separate process). Use the invocation recipe in `docs/ENGINES.md` §4b with `--skip-git-repo-check`.
+- Stance: «adversarial reviewer at a hostile competitor, ≤200 words»
 - Same payload
+
+**Codex absent:** both A and B become Agent-tool Claude subagents with distinct adversarial stances (murder-board and hostile-competitor). This provides context isolation and adversarial framing but shares architectural blind spots — the honest single-provider label from `docs/ENGINES.md` §5 must appear in the output.
 
 Time-box: 60 seconds. If a reviewer hasn't returned, mark `TIMEOUT` and proceed with the one that did.
 
@@ -111,9 +126,9 @@ Pair logic is simpler than the full jury:
 
 ## Failure modes
 
-1. **Only 1 reviewer available** — Skill refuses. Pair requires cross-family by definition. Suggest `attack-fix` (which has dialectical-bootstrap fallback) or manual review.
+1. **Codex unavailable** — Fall back to two Agent-tool Claude subagents with distinct stances (murder-board + hostile-competitor). Emit the honest single-provider label from `docs/ENGINES.md` §5 in the output header. Do NOT refuse — the bootstrap path is valid.
 
-2. **Reviewers disagree sharply** — Don't run a debate (defeats the time-box). Output `NEEDS-ATTENTION` and let the operator decide whether to escalate to `attack-fix`.
+2. **Reviewers disagree sharply** — Don't run a debate (defeats the time-box). Output `NEEDS-ATTENTION` and recommend escalating to `attack-fix` for a full Tier-3 jury. Do not attempt to resolve disagreement within this skill.
 
 3. **Diff is non-code** (markdown / yaml / json) — Run anyway. Adversarial review of YAML configs / prompts is sometimes more valuable than code review.
 
@@ -124,6 +139,18 @@ This skill auto-triggers when:
 - A `PostToolUse Edit|Write` hook fires with cumulative ≥5 lines changed (see [hooks/post-fix-pair.sh](../../hooks/post-fix-pair.sh)) — the simplest, lowest-friction adversarial gate
 - The user runs `git diff --cached` and then says «commit?» / «ok?» / «гоу»
 - The user explicitly invokes `/steelman:devils-pair`
+
+## Engine routing
+
+**Tier 2 — pair.**
+
+- **Static pre-gate first** (Step 0 above): Tier-0 change → exit immediately, no reviewers spawned. High-blast path → refuse, redirect to `attack-fix`.
+- **Codex present:** Reviewer A = Claude Agent-tool subagent (murder-board stance); Reviewer B = `codex exec` (hostile-competitor stance). Both run in parallel, isolated — MARS pattern.
+- **Codex absent:** both A and B are Agent-tool Claude subagents with distinct stances. Context isolation and adversarial framing are preserved; same-family architectural blind spots are not. Emit the honest single-provider label from `docs/ENGINES.md` §5.
+- **On disagreement:** do not debate, do not escalate inside this skill. Surface `NEEDS-ATTENTION` and recommend `attack-fix` for Tier-3 resolution.
+- No early-exit rule needed — only two reviewers; the pair result is always final for this skill.
+
+See `docs/ENGINES.md` for the full contract.
 
 ## Related skills
 

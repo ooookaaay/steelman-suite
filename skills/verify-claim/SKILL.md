@@ -139,6 +139,16 @@ This skill auto-triggers when:
 - The user invokes `/steelman:verify-claim` directly
 - Called from inside `steelman:attack-finding` as the first verification pass before spawning the jury
 
+## Engine routing
+
+**Tier 0 — mechanical, no model jury by design.**
+
+`verify-claim` is the cheap mechanical pre-filter that the other skills escalate FROM. It runs `grep`, `sed`, and `git` only — no Agent-tool subagents, no `codex exec`, no LLM calls. The Codex-absent path is identical because there is nothing to fall back from.
+
+When this skill returns CONFIRMED on a high-stakes claim, escalate to `steelman:attack-finding` for the full jury. Never add a jury inside this skill.
+
+See `docs/ENGINES.md` §6 for the full contract.
+
 ## Related skills
 
 - `steelman:attack-finding` — full multi-AI jury triage (use after this skill returns CONFIRMED if the claim is high-stakes)
