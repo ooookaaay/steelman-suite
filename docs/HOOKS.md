@@ -81,7 +81,7 @@ When the hook fires, this is the runtime contract:
   ┌─────────────────────────┬──────────────────────────┬──────────────────┐
   │ BOTH PASS               │ BOTH BLOCK                │ DISAGREE          │
   │ silent log,             │ loud message in chat:      │ meta-judge fires  │
-  │ no operator interrupt   │ "STEELMAN: блокер найден" │ (Claude in fresh  │
+  │ no operator interrupt   │ "STEELMAN: blocker found" │ (Claude in fresh  │
   │                         │                            │ context, ~30s)    │
   │                         │                            │ → final verdict   │
   └─────────────────────────┴──────────────────────────┴──────────────────┘
@@ -202,7 +202,7 @@ Three ways:
 
 ## Why opt-in by default
 
-Per the suite's design principle (and the operator binding feedback_no_overengineering):
+Per the suite's opt-in / minimal-overhead design principle:
 *adversarial review is only valuable when its findings are real AND its latency is
 acceptable*. Ambient critics suffer vigilance decrement (Atomic Robot 2024) and the
 3-reviewer jury isn't free. The 25-LOC threshold + 5-min debounce + background

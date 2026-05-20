@@ -5,7 +5,7 @@
 # `steelman:devils-pair` (Codex + Claude in parallel, ~60s) when cumulative
 # uncommitted change reaches the LOC threshold.
 #
-# DESIGN PRINCIPLES (per operator binding feedback_no_overengineering):
+# DESIGN PRINCIPLES (per the suite's opt-in / minimal-overhead design principle):
 # - Fires in BACKGROUND. Never blocks the agent's next tool call.
 # - LOC threshold gate (default 25). Small changes get skipped.
 # - One pair per ~5 minutes max — debounced via stamp file.
@@ -22,8 +22,7 @@
 #     "command": "/path/to/steelman-suite/hooks/post-edit-devils-pair.sh"
 #   }
 #
-# Or — operator binding feedback_use_codex_not_askquestion — wrap via
-# the existing update-config skill if it's not in settings yet.
+# Or configure it via your host's settings UI if not already in settings.json.
 #
 # CONFIG (env vars):
 #   STEELMAN_PAIR_LOC_THRESHOLD   — default 25; minimum cumulative LOC delta

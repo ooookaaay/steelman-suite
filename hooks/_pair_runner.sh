@@ -39,13 +39,17 @@ $(cat "$STRIPPED")"
     CLAUDE_PID=$!
 fi
 
-# ── Reviewer B (Codex, cross-family) ────────────────────────────────────────
-CODEX_OUT="$RUN_DIR/codex.txt"
+# ── Reviewer B (cross-stance) ────────────────────────────────────────────────
+# Uses Codex when available (true cross-family jury). When Codex is absent,
+# runs a second independent Claude invocation with a hostile-stance prompt
+# (dialectical bootstrap — same model, different adversarial framing, no
+# cross-talk with Reviewer A). Both paths produce identical output format.
+CODEX_OUT="$RUN_DIR/b-reviewer.txt"
 CODEX_VERDICT="UNKNOWN"
 CODEX_FINDING=""
+REVIEWER_B_ENGINE=""
 
-if command -v codex >/dev/null 2>&1; then
-    PROMPT_B="You are a hostile reviewer at a competing team. Find ONE concrete blocker in the diff below, or declare PASS. Time-box 50 seconds. No softening.
+PROMPT_B="You are a hostile reviewer at a competing team. Find ONE concrete blocker in the diff below, or declare PASS. Time-box 50 seconds. No softening.
 
 Output ONE of these on the first line:
   BLOCK: <one-line finding with file:line>
@@ -56,8 +60,15 @@ Then 2-3 sentences elaborating. No more.
 Diff:
 $(cat "$STRIPPED")"
 
+if command -v codex >/dev/null 2>&1; then
     timeout 70 codex exec --skip-git-repo-check "$PROMPT_B" > "$CODEX_OUT" 2>>"$RUN_DIR/runner.log" &
     CODEX_PID=$!
+    REVIEWER_B_ENGINE="Codex"
+elif command -v claude >/dev/null 2>&1; then
+    # Dialectical bootstrap: second independent Claude pass with cross-stance framing.
+    timeout 70 claude -p "$PROMPT_B" --output-format text > "$CODEX_OUT" 2>>"$RUN_DIR/runner.log" &
+    CODEX_PID=$!
+    REVIEWER_B_ENGINE="Claude, cross-stance"
 fi
 
 # ── Wait for both, capture verdicts ─────────────────────────────────────────
@@ -104,10 +115,10 @@ if [ "$PAIR_RESULT" = "DISAGREEMENT" ] && command -v claude >/dev/null 2>&1; the
     META_PROMPT="You are the meta-judge in an adversarial code review. Two independent reviewers disagreed about whether this diff should ship.
 
 Reviewer A (Claude, same-family): ${CLAUDE_VERDICT} — ${CLAUDE_FINDING}
-Full A response: $(cat "$CLAUDE_OUT" | head -10)
+Full A response: $(head -10 "$CLAUDE_OUT")
 
-Reviewer B (Codex, cross-family): ${CODEX_VERDICT} — ${CODEX_FINDING}
-Full B response: $(cat "$CODEX_OUT" | head -10)
+Reviewer B (${REVIEWER_B_ENGINE:-cross-stance}): ${CODEX_VERDICT} — ${CODEX_FINDING}
+Full B response: $(head -10 "$CODEX_OUT")
 
 You see neither reviewer's reasoning trace beyond the above. You also see the raw diff.
 
@@ -134,8 +145,8 @@ fi
 {
     echo "{"
     echo "  \"pair_result\": \"$PAIR_RESULT\","
-    echo "  \"claude\":      { \"verdict\": \"$CLAUDE_VERDICT\", \"finding\": \"$(echo "$CLAUDE_FINDING" | sed 's/"/\\"/g')\" },"
-    echo "  \"codex\":       { \"verdict\": \"$CODEX_VERDICT\",  \"finding\": \"$(echo "$CODEX_FINDING"  | sed 's/"/\\"/g')\" },"
+    echo "  \"reviewer_a\":  { \"engine\": \"Claude\", \"verdict\": \"$CLAUDE_VERDICT\", \"finding\": \"$(echo "$CLAUDE_FINDING" | sed 's/"/\\"/g')\" },"
+    echo "  \"reviewer_b\":  { \"engine\": \"$(echo "${REVIEWER_B_ENGINE:-unknown}" | sed 's/"/\\"/g')\", \"verdict\": \"$CODEX_VERDICT\", \"finding\": \"$(echo "$CODEX_FINDING" | sed 's/"/\\"/g')\" },"
     echo "  \"meta_judge\":  \"$(echo "$META_VERDICT" | sed 's/"/\\"/g')\","
     echo "  \"run_dir\":     \"$RUN_DIR\""
     echo "}"
@@ -148,28 +159,28 @@ case "$PAIR_RESULT" in
         ;;
     BLOCK-BOTH)
         echo ""
-        echo "🚨 [steelman] BLOCK — оба ревьюера нашли блокер в последних изменениях:"
-        echo "   Claude: $CLAUDE_FINDING"
-        echo "   Codex:  $CODEX_FINDING"
-        echo "   Подробности: $RUN_DIR/"
+        echo "🚨 [steelman] BLOCK — both reviewers found a blocker in the latest changes:"
+        echo "   Reviewer A (Claude): $CLAUDE_FINDING"
+        echo "   Reviewer B (${REVIEWER_B_ENGINE:-cross-stance}): $CODEX_FINDING"
+        echo "   Details: $RUN_DIR/"
         echo "" >&2
         ;;
     DISAGREEMENT)
         echo ""
         if [ -n "$META_VERDICT" ]; then
-            echo "⚖️ [steelman] разногласие → судья решил: $META_VERDICT"
-            echo "   Claude was: $CLAUDE_VERDICT — $CLAUDE_FINDING"
-            echo "   Codex was:  $CODEX_VERDICT — $CODEX_FINDING"
+            echo "⚖️ [steelman] disagreement → meta-judge decided: $META_VERDICT"
+            echo "   Reviewer A (Claude) was: $CLAUDE_VERDICT — $CLAUDE_FINDING"
+            echo "   Reviewer B (${REVIEWER_B_ENGINE:-cross-stance}) was: $CODEX_VERDICT — $CODEX_FINDING"
         else
-            echo "⚖️ [steelman] разногласие (судья недоступен):"
-            echo "   Claude: $CLAUDE_VERDICT — $CLAUDE_FINDING"
-            echo "   Codex:  $CODEX_VERDICT — $CODEX_FINDING"
+            echo "⚖️ [steelman] disagreement (meta-judge unavailable):"
+            echo "   Reviewer A (Claude): $CLAUDE_VERDICT — $CLAUDE_FINDING"
+            echo "   Reviewer B (${REVIEWER_B_ENGINE:-cross-stance}): $CODEX_VERDICT — $CODEX_FINDING"
         fi
-        echo "   Подробности: $RUN_DIR/" >&2
+        echo "   Details: $RUN_DIR/" >&2
         echo "" >&2
         ;;
     DEGRADED-PAIR)
-        echo "[steelman] pair degraded (одна сторона не вернула вердикт) — детали $RUN_DIR/" >&2
+        echo "[steelman] pair degraded (one reviewer did not return a verdict) — details: $RUN_DIR/" >&2
         ;;
 esac
 

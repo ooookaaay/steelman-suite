@@ -27,11 +27,10 @@ set -u
 # "Bash" in settings.json. To restrict to `git push`, read the tool input from
 # stdin (JSON) and short-circuit silently if the command is not a push.
 #
-# 2026-05-19 hotfix: removes the global `exit 0` bypass added earlier while
-# diagnosing the matcher issue. Operator-binding decision: option (a) — patch
-# at hook script (filtering inside) instead of changing matcher schema in
-# settings.json (which Claude Code doesn't accept for command-pattern filters
-# on Bash). See task #4 in session ee7b0652.
+# Note: Claude Code's PreToolUse matcher on "Bash" fires for every Bash tool
+# call, not just `git push`. Command-pattern filtering in settings.json is not
+# supported, so we filter here: read the tool input JSON from stdin and
+# short-circuit silently if the command does not contain `git push`.
 TOOL_INPUT_JSON=$(cat 2>/dev/null || true)
 if [ -n "$TOOL_INPUT_JSON" ]; then
     # Cheap substring grep: false positives only on commands that literally

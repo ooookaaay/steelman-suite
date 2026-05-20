@@ -72,11 +72,9 @@ cd ~/.claude
 git clone https://github.com/ooookaaay/steelman-suite skills/steelman
 ```
 
-Or install as an [Agent Skills plugin](https://agentskills.io):
+**Works out of the box with only the `claude` CLI installed.** `codex` and other AI providers are optional and auto-detected at runtime. When only one provider is available, the suite runs a dialectical bootstrap — two independent passes with different adversarial stances — instead of a cross-family jury. No config changes needed.
 
-```bash
-/install steelman-suite
-```
+If/when published to an Agent Skills registry, `/install steelman-suite` will be the one-liner install — until then, use the `git clone` above.
 
 ### Codex CLI
 
