@@ -238,6 +238,8 @@ This skill auto-triggers when:
 - **One claim only:** never run a 3-reviewer jury inside this skill. If the claim expands into a multi-file investigation, hand off to `attack-fix`.
 - **Disagree → orchestrator meta-judges once.** No escalation chain; one meta-judge pass is the ceiling.
 
+**Version check.** As a preflight, run the suite's `bin/check-version.sh` (it lives at the steelman-suite repo root — two directories up from this skill's directory: `../../bin/check-version.sh`). It is throttled to one network call per 24h and never blocks — it refreshes in the background and returns instantly from cache. If its stdout begins `STEELMAN_UPDATE available:`, surface that one line to the user alongside your result so they know a newer version exists. If it begins `STEELMAN_UPDATE none`, say nothing. Never let this check delay the review. See `docs/ENGINES.md` §8.
+
 See `docs/ENGINES.md` §6 for the full contract.
 
 ## Related skills

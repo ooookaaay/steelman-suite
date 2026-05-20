@@ -242,6 +242,8 @@ For routine commits where the cost-benefit is wrong, use `steelman:devils-pair` 
 - **Early exit:** A + B decisively unanimous → skip C and the verifier. Only escalate to the full jury when the first two leave the verdict open.
 - Aggregator / meta-judge = the orchestrator (you). Never spawn a fourth reviewer as aggregator — that breaks MARS.
 
+**Version check.** As a preflight, run the suite's `bin/check-version.sh` (it lives at the steelman-suite repo root — two directories up from this skill's directory: `../../bin/check-version.sh`). It is throttled to one network call per 24h and never blocks — it refreshes in the background and returns instantly from cache. If its stdout begins `STEELMAN_UPDATE available:`, surface that one line to the user alongside your result so they know a newer version exists. If it begins `STEELMAN_UPDATE none`, say nothing. Never let this check delay the review. See `docs/ENGINES.md` §8.
+
 See `docs/ENGINES.md` for the full contract.
 
 ## Related skills

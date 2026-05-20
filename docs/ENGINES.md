@@ -223,3 +223,30 @@ inflates confidence without accuracy (arXiv:2505.19184).
 - **Same-family correlated-error penalty +6.6-7.6pp** — arXiv:2506.07962.
 - **Multi-turn review raises FP ~62%; same-model debate inflates confidence** — arXiv:2603.16244, arXiv:2505.19184.
 - **Solo LLM code-review F1 ≈ 19% — jury structure is necessary for recall** — arXiv:2509.01494.
+
+---
+
+## 8. Version notification
+
+steelman-suite ships fast and this contract evolves. Every skill, as its first
+action, runs `bin/check-version.sh` and surfaces a one-line notice when the
+installed copy is behind the published version.
+
+The check obeys the same efficiency rule as everything else here — **it must
+never cost the user time:**
+
+- **Throttled** — one network call per 24h maximum; every other invocation is a
+  local cache read (<1ms).
+- **Never blocks** — a stale cache is refreshed in a detached background process
+  (stale-while-revalidate); the calling skill never waits on the network. A
+  notice is at most 24h stale, which is fine for "a new version exists".
+- **Never errors loudly** — offline, no `curl`/`wget`, or a parse failure →
+  silent, no notice, exit 0.
+- **Deterministic source** — the remote location is a hardcoded constant in
+  `bin/check-version.sh`. Idea borrowed from GSD's `check-latest-version.cjs`:
+  the update source is not a runtime choice the executing model can get wrong.
+
+**Skill contract:** run `bin/check-version.sh`; if stdout begins
+`STEELMAN_UPDATE available:`, append that single line to your result. If it
+begins `STEELMAN_UPDATE none`, say nothing. This check must never delay or block
+the review itself.
