@@ -157,15 +157,17 @@ This skill does **not** auto-trigger by default. It's expensive ($5-20) and slow
 
 Manual invocation only:
 - `/steelman:full-codebase`
-- Optional pre-release CI gate: a GitHub Actions workflow that runs this on `release/*` branches (see [examples/ci-full-codebase-release-gate.yml](../../examples/ci-full-codebase-release-gate.yml))
+- Optional pre-release CI gate: wire a GitHub Actions workflow that runs this on `release/*` branches.
 
 ## Related skills
 
 - `steelman:attack-fix` — single-commit review (the building block this skill composes)
 - `steelman:attack-finding` — meta-review of an existing claim
 - `steelman:devils-pair` — fast smell-test on incremental changes
+- `steelman:pre-mortem` — run on a *design* before commitment; `full-codebase` then catches the predicate / edge-case bugs in the *implementation* that a pre-mortem's framing misses. The two are complementary — run both before a milestone tag, not one instead of the other.
 
 ## References
 
 - Field example: the 2026-05-18 ugolovkin run executed this pattern manually — 5 codex audits + 4 devils-advocate agents + 2 background-research agents = 11 parallel agents over ~4 hours. Result: 14 confirmed-real fixes shipped to v2-dev (commits 429d93a4..36aab297), 32 findings triaged into latent/by-design buckets.
+- Field example: the 2026-05-19 ugolovkin v2.15 release-gate run (`v2.15-fullpass-20260519T1730`) — 5 domains, ~55k LOC, 38 min, 5 parallel agents. 8 confirmed-real HIGH. Caught **D-F1**, a whitespace-fragile predicate in a hotfix that had shipped to production the same day — a bug a design `pre-mortem` had missed because its attention was on the rule's architecture, not on string-equality details. Fixed in-session, hours before the publish deadline. This run is the field basis for the «pre-mortem and full-codebase are complementary» note in `steelman:pre-mortem`.
 - [Sonar Foundation Agent (Nov 2025), 79.2% SWE-bench Verified](https://www.sonar.dev/blog/sonar-foundation-agent) — single-agent with great tools beats free-MAD on whole-repo; this skill applies the same lesson at the domain level (one strong agent per domain, no debate between them).

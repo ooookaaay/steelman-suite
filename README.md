@@ -204,6 +204,14 @@ The suite triaged 32 codex HIGH findings → **9 confirmed-real, 13 latent-not-f
 
 The other 13 LATENT-NOT-FIRE findings were exactly the dormant code paths that codex over-rated as HIGH — feature flag off, migration not yet applied, no callers — caught by Step 4 (production reachability check) in `attack-finding`.
 
+### Field evidence — 2026-05-19 v2.15 milestone close
+
+`steelman:full-codebase` ran as the release gate before `/gsd-complete-milestone v2.15` (run `v2.15-fullpass-20260519T1730`): 5 domains, ~55k LOC (88% of `src/`), 38 min, 5 parallel agents — one domain crashed on an API 529 and was re-spawned smaller. Result: **8 confirmed-real HIGH**, 8 latent-not-fire, 13 by-design, 9 false-positive (self-corrected in-audit).
+
+The headline finding — **D-F1** — is the clearest case yet for *why `pre-mortem` and `full-codebase` are not interchangeable*. Earlier the same day, a `steelman:pre-mortem` on a hotfix design had done its job well: it forced a PIVOT to a narrower, safer merge rule. But the full-codebase pass then caught that the *shipped* hotfix (already deployed to production) could not fire on its own target — «ч.4 ст.160 УК РФ» and «ч. 4 ст. 160 УК РФ» normalised to different strings, so the merge it was written to perform was silently rejected. An existing unit test had even pinned the buggy contract. The pre-mortem missed it because its attention was on the rule's *architecture*; the bug was a whitespace-equality detail one layer down. Hot-fixed in-session with a reproducer test — hours before a hard publish deadline.
+
+**Lesson, now folded into the skills:** a design `pre-mortem` and a `full-codebase` pass are complementary, not redundant. Pre-mortem catches architectural and operational failure modes; full-codebase catches the small predicate / edge-case bugs — string equality, whitespace, off-by-one, regex gaps — that the pre-mortem's framing draws attention away from. Run both before a milestone tag: pre-mortem on the design, full-codebase on the code.
+
 ## License
 
 [MIT](LICENSE) — use freely, attribute kindly.

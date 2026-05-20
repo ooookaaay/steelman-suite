@@ -114,6 +114,14 @@ Deduplicate by `(trigger, root_cause)`. Rank by:
 - ❌ Skipping the time-to-detect column — silent-fail mode is the most expensive failure class
 - ❌ Calling a forward-looking "risk analysis" a pre-mortem — they are different and not interchangeable
 
+## Known blind spot
+
+A pre-mortem reliably surfaces *architectural and operational* failure modes — the past-tense framing is built to expand exactly that space. It is correspondingly **weak on small implementation-level predicate bugs**: string-equality / whitespace mismatches, off-by-one, regex gaps. The framing pulls attention toward «what decision failed», not «what one line is subtly wrong».
+
+Field case (ugolovkin v2.15, 2026-05-19): a pre-mortem on a hotfix design correctly forced a PIVOT to a safer merge rule — then a whitespace-equality bug in the *implementation* of that rule shipped anyway («ч.4 ст.160» vs «ч. 4 ст. 160» normalised to different strings), and was caught only by a later `steelman:full-codebase` pass.
+
+**Mitigation:** a pre-mortem on the design does not substitute for a pass on the code. Before a release or milestone tag, run both — `pre-mortem` on the design, `steelman:full-codebase` (or `attack-fix` on the diff) on the implementation.
+
 ## Auto-trigger conditions
 
 - The user's message contains «pre-mortem» / «premortem» / «failure modes» / «что может сломаться»
@@ -124,6 +132,7 @@ Deduplicate by `(trigger, root_cause)`. Rank by:
 
 - `steelman:attack-fix` — after the decision shipped as code, attack the implementation
 - `steelman:attack-finding` — meta-review a claim about an existing decision
+- `steelman:full-codebase` — complements pre-mortem before a release: pre-mortem catches architectural risk in the *design*, full-codebase catches the small predicate / edge-case bugs in the *code* that the pre-mortem's framing misses (see Known blind spot)
 
 ## References
 
