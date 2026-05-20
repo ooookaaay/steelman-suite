@@ -42,6 +42,19 @@ Adversarial review is only valuable when its findings are real AND its latency i
 
 **Hooks are OPT-IN by default.** The suite does not auto-fire on `git commit`. You enable hooks for the chains you trust. See [docs/HOOKS.md](docs/HOOKS.md).
 
+### How the suite decides what to run
+
+v0.2.0 makes "stay out of the way" mechanical. Before any model is called, a **static pre-gate** reads the change metadata — lines changed, files touched, whether a high-blast path (migrations / auth / publish) is hit — and picks a tier:
+
+| Tier | Change | What runs |
+|---|---|---|
+| 0 | tiny, no blast-radius | nothing |
+| 1 | moderate | one context-isolated reviewer |
+| 2 | larger / multi-file | Claude + Codex pair |
+| 3 | high-blast path / very large | 3-reviewer jury + cross-family verifier |
+
+It does **not** pre-pay for the top tier. It runs the cheap tier, then escalates **only when the reviewers disagree** — inter-reviewer disagreement is the escalation signal, and in practice it fires on ~3-4% of changes. When reviewers already agree, the run stops early at quorum. The full routing + efficiency contract is [docs/ENGINES.md](docs/ENGINES.md), grounded in 2026 research (see its §7).
+
 ## What
 
 | Skill | Single-purpose summary |
@@ -134,8 +147,8 @@ All [agentskills.io](https://agentskills.io)-compatible hosts: drop the repo int
 
 The `hooks/` directory contains [Claude Code hooks](https://docs.claude.com/en/docs/claude-code/hooks) you can wire into `~/.claude/settings.json`:
 
-- `pre-commit-attack.sh` — runs `attack-fix` automatically on `git commit` PreToolUse
-- `post-fix-pair.sh` — runs `devils-pair` automatically after Edit/Write operations modify >5 lines
+- `pre-push-attack-on-high-blast.sh` — runs `attack-fix` on `git push` (PreToolUse), but only when the diff touches a high-blast path
+- `post-edit-devils-pair.sh` — runs `devils-pair` in the background after Edit/Write operations cross a LOC threshold
 
 See [docs/HOOKS.md](docs/HOOKS.md) for setup recipes.
 
@@ -162,6 +175,7 @@ We're the only one that hits all 7 axes simultaneously.
 - **Calibrated confidence** via Brier-score recalibration on a sliding window of logged outcomes. Raw model «98% certain» is noise; calibrated «72% certain, hit rate matches over last 50 calls» is signal.
 - **Steelman finding schema** — every output ships four things: (a) the strongest case FOR the original code, (b) the attack vector, (c) a verifiable `file:line`, (d) a reproducible failing test. Three of the four can be checked without re-running the LLM.
 - **MARS pattern** (**M**ulti-**A**gent **R**eviewers in **S**eparation) — independent reviewers + aggregator, no debate between them. Free-for-all multi-agent debate underperforms independent + merge (see [_Stop Overvaluing MAD_, 2025](https://arxiv.org/abs/2502.08788)).
+- **Efficiency-gated invocation** — a zero-LLM static pre-gate picks the review tier from diff metadata; the expensive cross-model jury fires only when a cheap pass leaves the verdict open (inter-reviewer disagreement), and stops early on quorum. The expensive tier is spent at the right moment, not by default. See [docs/ENGINES.md](docs/ENGINES.md).
 
 ## Limitations
 
