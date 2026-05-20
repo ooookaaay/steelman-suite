@@ -68,7 +68,7 @@
       "description": "OPT-IN. Runs devils-pair on cumulative diff after Edit/Write touches >25 LOC. ~60s background. Operator-configurable threshold via STEELMAN_PAIR_LOC_THRESHOLD env var. Default disabled — copy to settings.json to enable."
     }
   ],
-  "hooks_intentionally_disabled_by_default": "The suite is opt-in by design. Auto-firing adversarial review on every commit destroys flow without proportional safety benefit (per operator binding feedback_no_overengineering). The operator chooses what to gate.",
+  "hooks_intentionally_disabled_by_default": "The suite is opt-in by design. Auto-firing adversarial review on every commit destroys flow without proportional safety benefit. You choose what to gate.",
   "compatibility": {
     "claude-code": ">=1.41.0",
     "codex-cli": ">=0.130.0",
